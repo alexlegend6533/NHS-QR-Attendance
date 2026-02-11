@@ -89,8 +89,8 @@
             top: 15px;
             right: 20px;
             font-size: 0.9em;
-            color: #10b981;
-            background: rgba(16, 185, 129, 0.1);
+            color: #facc15; /* Yellow while syncing */
+            background: rgba(250, 204, 21, 0.1);
             padding: 5px 15px;
             border-radius: 20px;
         }
@@ -98,7 +98,7 @@
 </head>
 <body>
 
-    <div id="sync-status">Syncing with Server...</div>
+    <div id="sync-status">⚡ Syncing with Google Server...</div>
 
     <div class="admin-panel">
         <div class="input-group">
@@ -122,13 +122,12 @@
     </div>
 
     <script>
-        const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzwjFhh5vedRNU6WpDfJxeQ4EyOg74aF-TnQlJpoig9bJLokh6Vj1a0wdE308J48Gz2-g/exec";
+        const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbyq3BhG420ZH2HSVjMNu_02CcvF7EQC-BWdKdhhb4hLe4DehVTLkAdMUYm7N3FoW7-ViQ/exec";
         
-        // Calibration Variables
-        let 𝐭₀ = -7000; // Start with 7s safety lead
+        let 𝐭₀ = -7000; // Default 7s lead
         let 𝐬𝐲𝐧𝐜𝐞𝐝 = false;
 
-        // Date Formatter Logic
+        // Date Formatter
         const dateInput = document.getElementById('displayDate');
         dateInput.addEventListener('input', function (𝐞) {
             let 𝐯𝐚𝐥 = 𝐞.target.value.replace(/\D/g, '');
@@ -144,24 +143,32 @@
             𝐞.target.value = 𝐟;
         });
 
-        // AUTO-SYNC: Calculates clock drift between Host and Google
-        async function synchronize() {
-            const start = Date.now();
-            try {
-                const response = await fetch(𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync");
-                const data = await response.json();
-                const latency = (Date.now() - start) / 2;
+        // HIGH-PERFORMANCE JSONP SYNC
+        function syncTime() {
+            const 𝐬𝐜𝐫𝐢𝐩𝐭 = document.createElement('script');
+            const 𝐬𝐭𝐚𝐫𝐭 = Date.now();
+            
+            // Callback function that Google calls
+            window.handleSyncResponse = function(𝐝𝐚𝐭𝐚) {
+                const 𝐥𝐚𝐭𝐞𝐧𝐜𝐲 = (Date.now() - 𝐬𝐭𝐚𝐫𝐭) / 2;
+                // Calculate drift + 7s lead
+                𝐭₀ = (𝐝𝐚𝐭𝐚.𝐭𝐢𝐦𝐞 - (Date.now() - 𝐥𝐚𝐭𝐞𝐧𝐜𝐲)) - 7000;
                 
-                // Adjust t0: Server Time - (Local Time - Latency) - 7s Safety lead
-                𝐭₀ = (data.𝐭𝐢𝐦𝐞 - (Date.now() - latency)) - 7000;
+                const 𝐬𝐭𝐚𝐭𝐮𝐬 = document.getElementById('sync-status');
+                𝐬𝐭𝐚𝐭𝐮𝐬.innerText = "✓ Server Synced (" + Math.round(𝐭₀) + "ms)";
+                𝐬𝐭𝐚𝐭𝐮𝐬.style.color = "#10b981";
+                𝐬𝐭𝐚𝐭𝐮𝐬.style.background = "rgba(16, 185, 129, 0.1)";
                 
-                document.getElementById('sync-status').innerText = "✓ Server Synced (" + Math.round(𝐭₀) + "ms)";
                 𝐬𝐲𝐧𝐜𝐞𝐝 = true;
                 updateQR();
-            } catch (𝐞) {
-                document.getElementById('sync-status').innerText = "⚠ Sync Failed - Local Mode";
-                document.getElementById('sync-status').style.color = "#f87171";
-            }
+                
+                // Cleanup
+                document.body.removeChild(𝐬𝐜𝐫𝐢𝐩𝐭);
+                delete window.handleSyncResponse;
+            };
+
+            𝐬𝐜𝐫𝐢𝐩𝐭.src = 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync&callback=handleSyncResponse";
+            document.body.appendChild(𝐬𝐜𝐫𝐢𝐩𝐭);
         }
 
         function updateQR() {
@@ -187,8 +194,8 @@
             }
         }, 1000);
 
-        // Run sync on load
-        synchronize();
+        // Initial Sync
+        syncTime();
     </script>
 </body>
 </html>
