@@ -1,22 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NHS Attendance | Master Sync</title>
+    <title>NHS Attendance | Identity Lock</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #0f172a; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        .admin-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 2px solid rgba(56, 189, 248, 0.2); padding: 40px; background: rgba(15, 23, 42, 0.8); }
-        .qr-panel { flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .input-group { width: 100%; max-width: 450px; margin-bottom: 40px; }
-        label { display: block; color: #38bdf8; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 15px; font-size: 0.9em; }
-        .editable-box { width: 100%; background: rgba(255, 255, 255, 0.03); border: 3px dashed #38bdf8; border-radius: 20px; padding: 25px; font-size: 3.5em; color: white; text-align: center; outline: none; transition: all 0.3s ease; }
-        .box { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 0 80px rgba(56, 189, 248, 0.5); min-width: 480px; min-height: 480px; display: flex; align-items: center; justify-content: center; margin: 20px 0; }
-        #timer { font-size: 110px; color: #38bdf8; font-weight: 900; margin-bottom: 10px; }
-        #sync-status { position: absolute; top: 15px; right: 20px; font-size: 0.85em; color: #facc15; background: rgba(250, 204, 21, 0.1); padding: 6px 16px; border-radius: 30px; border: 1px solid rgba(250, 204, 21, 0.2); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f1a; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .admin-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 1px solid rgba(56, 189, 248, 0.1); background: #0f172a; padding: 40px; }
+        .qr-panel { flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: radial-gradient(circle at center, #1e293b 0%, #0b0f1a 100%); }
+        .input-group { width: 100%; max-width: 400px; margin-bottom: 50px; }
+        label { display: block; color: #38bdf8; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; font-size: 0.8em; opacity: 0.8; }
+        .editable-box { width: 100%; background: rgba(255, 255, 255, 0.02); border: 2px dashed rgba(56, 189, 248, 0.4); border-radius: 15px; padding: 25px; font-size: 3.5em; color: white; text-align: center; outline: none; transition: all 0.3s ease; }
+        .editable-box:focus { border-color: #38bdf8; background: rgba(56, 189, 248, 0.05); }
+        .box { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 0 60px rgba(56, 189, 248, 0.3); margin: 20px 0; }
+        #timer { font-size: 120px; color: #38bdf8; font-weight: 800; text-shadow: 0 0 30px rgba(56, 189, 248, 0.4); margin-bottom: -10px; }
+        #sync-status { position: absolute; top: 20px; right: 20px; font-size: 0.75em; letter-spacing: 1px; color: #facc15; background: rgba(250, 204, 21, 0.1); padding: 8px 16px; border-radius: 30px; border: 1px solid rgba(250, 204, 21, 0.2); }
+        .lock-badge { margin-top: 20px; font-size: 0.9em; letter-spacing: 2px; color: #64748b; font-weight: 600; }
     </style>
 </head>
 <body>
-    <div id="sync-status">⚡ CALIBRATING...</div>
+    <div id="sync-status">⚡ CALIBRATING SYNC...</div>
     <div class="admin-panel">
         <div class="input-group">
             <label>Meeting Date</label>
@@ -28,32 +30,32 @@
         </div>
     </div>
     <div class="qr-panel">
-        <h1>NHS ATTENDANCE</h1>
-        <div id="timer"><span id="count">5</span>s</div>
+        <h1 style="letter-spacing: 8px; font-weight: 900; margin-bottom: 0;">NHS ATTENDANCE</h1>
+        <div id="timer">5s</div>
         <div class="box"><div id="qrcode"></div></div>
-        <p>ULTRA-SYNC ACTIVE (35S WINDOW)</p>
+        <div class="lock-badge">STRICT IDENTITY LOCK ACTIVE (5S WINDOW)</div>
     </div>
 
     <script>
-        // LATEST DEPLOYMENT URL
-        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzPzGlFGThEMzVysF4XdflOBP5dejyrmSSS9Z9i0YGbgCiaLW6Y9N5vJVQdSqbGy2icOw/exec";
+        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbw8-mFn4zMrjtS7AzRXumVEkurlNd9ZXJl-vKFAm1StDMbj7TL_LEeywWyufFr_MkR_/exec";
         
-        window.drift = 0; 
+        let drift = 0; 
 
-        async function syncClocks() {
+        async function syncWithServer() {
             try {
                 const start = Date.now();
-                const res = await fetch(BASE_URL + "?action=sync&ts=" + start);
+                const res = await fetch(BASE_URL + "?action=sync");
                 const data = await res.json();
                 const latency = (Date.now() - start) / 2;
-                window.drift = (data.time + latency) - Date.now();
+                drift = (data.serverTime + latency) - Date.now();
                 
                 const s = document.getElementById('sync-status');
-                s.innerText = "✓ SYNCED (ULTRA-BUFFER)";
+                s.innerText = "● LIVE SYNCED";
                 s.style.color = "#10b981";
                 s.style.background = "rgba(16, 185, 129, 0.1)";
+                s.style.borderColor = "rgba(16, 185, 129, 0.2)";
             } catch (e) {
-                console.warn("Sync failed, using local time.");
+                console.warn("Sync failed, fallback to local.");
             }
             updateQR();
         }
@@ -61,27 +63,31 @@
         function updateQR() {
             const qc = document.getElementById("qrcode");
             qc.innerHTML = "";
-            // The key is calculated from the synced server time
-            const key = Math.floor((Date.now() + window.drift) / 5000); 
+            // The key is locked to the 5-second server interval
+            const key = Math.floor((Date.now() + drift) / 5000); 
+            
             new QRCode(qc, { 
                 text: BASE_URL + "?key=" + key, 
-                width: 480, 
-                height: 480,
+                width: 420, 
+                height: 420,
                 correctLevel : QRCode.CorrectLevel.M 
             });
         }
 
+        let timeLeft = 5;
         setInterval(() => {
-            const n = document.getElementById('count');
-            let v = parseInt(n.innerText) - 1;
-            if (v <= 0) { 
+            timeLeft--;
+            if (timeLeft <= 0) { 
                 updateQR(); 
-                v = 5; 
+                timeLeft = 5; 
             }
-            n.innerText = v;
+            document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
 
-        syncClocks();
+        // Initial Calibration
+        syncWithServer();
+        // Re-calibrate every 2 minutes to ensure MacBook doesn't drift
+        setInterval(syncWithServer, 120000);
     </script>
 </body>
 </html>
