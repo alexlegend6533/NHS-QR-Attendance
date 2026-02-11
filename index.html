@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NHS Attendance | Final Sync Fix</title>
+    <title>NHS Attendance | High Performance Sync</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background: #0f172a; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -18,27 +18,19 @@
 <body>
     <div id="sync-status">⚡ Syncing with Google Server...</div>
     <div class="admin-panel">
-        <div class="input-group">
-            <label>Meeting Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="02/11/2026" maxlength="10">
-        </div>
-        <div class="input-group">
-            <label>Form Password</label>
-            <input type="text" class="editable-box" id="displayPass" value="Service">
-        </div>
+        <div class="input-group"><label>Meeting Date</label><input type="text" class="editable-box" id="displayDate" value="02/11/2026" maxlength="10"></div>
+        <div class="input-group"><label>Form Password</label><input type="text" class="editable-box" id="displayPass" value="Service"></div>
     </div>
     <div class="qr-panel">
         <h1>NHS ATTENDANCE</h1>
         <div id="timer"><span id="count">5</span>s</div>
         <div class="box"><div id="qrcode"></div></div>
-        <p>Auto-Sync Active</p>
+        <p>Refreshes every 5s | Auto-Sync Active</p>
     </div>
 
     <script>
         const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbz7Q0bU3JR3Gk1iUlpexdpnIFspSOd1Lm-kPMZjEugr1a8vc9t2rPxW-QZgFPVj2bLZtQ/exec";
-        
-        // 1. MUST BE GLOBAL - TOP LEVEL
-        window.𝐭₀ = -7000;
+        window.𝐭₀ = -7000; 
         window.𝐬𝐲𝐧𝐜𝐞𝐝 = false;
 
         window.handleSyncResponse = function(𝐝𝐚𝐭𝐚) {
@@ -55,16 +47,13 @@
             const 𝐪 = document.getElementById("qrcode");
             if (!𝐪) return;
             𝐪.innerHTML = "";
-            // Use window.t0 explicitly
             const 𝐤 = Math.floor((Date.now() + window.𝐭₀) / 5000); 
-            new QRCode(𝐪, { 
-                text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤, 
-                width: 480, height: 480, 
-                correctLevel: QRCode.CorrectLevel.M 
-            });
+            new QRCode(𝐪, { text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤, width: 480, height: 480 });
         }
 
-        // Timer Loop
+        // FORCE START: If server is slow, show QR anyway after 1.5s
+        setTimeout(() => { if (!window.𝐬𝐲𝐧𝐜𝐞𝐝) updateQR(); }, 1500);
+
         setInterval(() => {
             const 𝐧 = document.getElementById('count');
             let 𝐯 = parseInt(𝐧.innerText) - 1;
@@ -72,18 +61,9 @@
             𝐧.innerText = 𝐯;
         }, 1000);
 
-        // Execute Sync
         const 𝐬𝐜 = document.createElement('script');
         𝐬𝐜.src = 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync&callback=handleSyncResponse&ts=" + Date.now();
         document.body.appendChild(𝐬𝐜);
-
-        // Fail-safe
-        setTimeout(() => {
-            if (!window.𝐬𝐲𝐧𝐜𝐞𝐝) {
-                document.getElementById('sync-status').innerText = "⚠ Using Local Clock Lead";
-                updateQR();
-            }
-        }, 4000);
     </script>
 </body>
 </html>
