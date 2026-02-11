@@ -10,10 +10,9 @@
         .input-group { width: 100%; max-width: 450px; margin-bottom: 40px; }
         label { display: block; color: #38bdf8; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 15px; font-size: 0.9em; }
         .editable-box { width: 100%; background: rgba(255, 255, 255, 0.03); border: 3px dashed #38bdf8; border-radius: 20px; padding: 25px; font-size: 3.5em; color: white; text-align: center; outline: none; transition: all 0.3s ease; }
-        .editable-box:focus { background: rgba(56, 189, 248, 0.1); border-style: solid; }
         .box { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 0 80px rgba(56, 189, 248, 0.5); min-width: 480px; min-height: 480px; display: flex; align-items: center; justify-content: center; margin: 20px 0; }
         #timer { font-size: 110px; color: #38bdf8; font-weight: 900; margin-bottom: 10px; }
-        #sync-status { position: absolute; top: 15px; right: 20px; font-size: 0.85em; color: #facc15; background: rgba(250, 204, 21, 0.1); padding: 6px 16px; border-radius: 30px; border: 1px solid rgba(250, 204, 21, 0.2); transition: all 0.5s ease; }
+        #sync-status { position: absolute; top: 15px; right: 20px; font-size: 0.85em; color: #facc15; background: rgba(250, 204, 21, 0.1); padding: 6px 16px; border-radius: 30px; border: 1px solid rgba(250, 204, 21, 0.2); }
     </style>
 </head>
 <body>
@@ -36,24 +35,24 @@
     </div>
 
     <script>
-        // NEW DEPLOYMENT URL
-        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbxxk3iNSAZN41tYHv65JfcoMOW2UaK2QCw36YN3zwWGSO61SL6NLYV1RdaUH4-ox_ohsw/exec";
+        // LATEST DEPLOYMENT URL
+        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbwgcKIpr3awJXTckNPCXw9-Q1jl-Av57cSXLTy3XAY81lAwo_--sQUUkypwORKC9ufN9g/exec";
         
         window.drift = 0; 
 
         async function syncClocks() {
             try {
                 const start = Date.now();
-                const res = await fetch(BASE_URL + "?action=sync");
+                // Fetching with a cache-buster to ensure fresh server time
+                const res = await fetch(BASE_URL + "?action=sync&ts=" + start);
                 const data = await res.json();
                 const latency = (Date.now() - start) / 2;
                 window.drift = (data.time + latency) - Date.now();
                 
                 const s = document.getElementById('sync-status');
-                s.innerText = "✓ SYNCED";
+                s.innerText = "✓ SYNCED (BUFFERS ACTIVE)";
                 s.style.color = "#10b981";
                 s.style.background = "rgba(16, 185, 129, 0.1)";
-                s.style.borderColor = "rgba(16, 185, 129, 0.3)";
             } catch (e) {
                 console.warn("Sync failed, using local time.");
             }
@@ -63,6 +62,7 @@
         function updateQR() {
             const qc = document.getElementById("qrcode");
             qc.innerHTML = "";
+            // Generates key based on synced time
             const key = Math.floor((Date.now() + window.drift) / 5000); 
             new QRCode(qc, { 
                 text: BASE_URL + "?key=" + key, 
@@ -82,7 +82,6 @@
             n.innerText = v;
         }, 1000);
 
-        // Initial setup
         syncClocks();
     </script>
 </body>
