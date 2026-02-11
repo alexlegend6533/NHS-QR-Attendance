@@ -9,63 +9,80 @@
         .qr-panel { flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .input-group { width: 100%; max-width: 450px; margin-bottom: 40px; }
         label { display: block; color: #38bdf8; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 15px; font-size: 0.9em; }
-        .editable-box { width: 100%; background: rgba(255, 255, 255, 0.03); border: 3px dashed #38bdf8; border-radius: 20px; padding: 25px; font-size: 3.5em; color: white; text-align: center; outline: none; }
+        .editable-box { width: 100%; background: rgba(255, 255, 255, 0.03); border: 3px dashed #38bdf8; border-radius: 20px; padding: 25px; font-size: 3.5em; color: white; text-align: center; outline: none; transition: all 0.3s ease; }
+        .editable-box:focus { background: rgba(56, 189, 248, 0.1); border-style: solid; }
         .box { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 0 80px rgba(56, 189, 248, 0.5); min-width: 480px; min-height: 480px; display: flex; align-items: center; justify-content: center; margin: 20px 0; }
         #timer { font-size: 110px; color: #38bdf8; font-weight: 900; margin-bottom: 10px; }
-        #sync-status { position: absolute; top: 15px; right: 20px; font-size: 0.85em; color: #facc15; background: rgba(250, 204, 21, 0.1); padding: 6px 16px; border-radius: 30px; border: 1px solid rgba(250, 204, 21, 0.2); }
+        #sync-status { position: absolute; top: 15px; right: 20px; font-size: 0.85em; color: #facc15; background: rgba(250, 204, 21, 0.1); padding: 6px 16px; border-radius: 30px; border: 1px solid rgba(250, 204, 21, 0.2); transition: all 0.5s ease; }
     </style>
 </head>
 <body>
     <div id="sync-status">⚡ CALIBRATING...</div>
     <div class="admin-panel">
-        <div class="input-group"><label>Meeting Date</label><input type="text" class="editable-box" id="displayDate" value="02/11/2026"></div>
-        <div class="input-group"><label>Form Password</label><input type="text" class="editable-box" id="displayPass" value="Service"></div>
+        <div class="input-group">
+            <label>Meeting Date</label>
+            <input type="text" class="editable-box" id="displayDate" value="02/11/2026">
+        </div>
+        <div class="input-group">
+            <label>Form Password</label>
+            <input type="text" class="editable-box" id="displayPass" value="Service">
+        </div>
     </div>
     <div class="qr-panel">
         <h1>NHS ATTENDANCE</h1>
         <div id="timer"><span id="count">5</span>s</div>
         <div class="box"><div id="qrcode"></div></div>
+        <p>SECURE ROTATION ACTIVE</p>
     </div>
 
     <script>
-        const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbz7PI80uideNStN6Jdj9avwzqSwZF8m8dGpWI8SRrhzUGG4F0sJUn_tsvk7fIJonhbL0Q/exec";
-        window.𝐝𝐫𝐢𝐟𝐭 = 0; 
+        // NEW DEPLOYMENT URL
+        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbxxk3iNSAZN41tYHv65JfcoMOW2UaK2QCw36YN3zwWGSO61SL6NLYV1RdaUH4-ox_ohsw/exec";
+        
+        window.drift = 0; 
 
-        // Simplified Sync logic for Enterprise Accounts
         async function syncClocks() {
             try {
-                const 𝐬𝐭𝐚𝐫𝐭 = Date.now();
-                const 𝐫𝐞𝐬 = await fetch(𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync");
-                const 𝐝 = await 𝐫𝐞𝐬.json();
-                // Adjust for network latency
-                const 𝐥𝐚𝐭𝐞𝐧𝐜𝐲 = (Date.now() - 𝐬𝐭𝐚𝐫𝐭) / 2;
-                window.𝐝𝐫𝐢𝐟𝐭 = (𝐝.𝐭𝐢𝐦𝐞 + 𝐥𝐚𝐭𝐞𝐧𝐜𝐲) - Date.now();
+                const start = Date.now();
+                const res = await fetch(BASE_URL + "?action=sync");
+                const data = await res.json();
+                const latency = (Date.now() - start) / 2;
+                window.drift = (data.time + latency) - Date.now();
                 
-                const 𝐬 = document.getElementById('sync-status');
-                𝐬.innerText = "✓ SYNCED";
-                𝐬.style.color = "#10b981";
-                𝐬.style.background = "rgba(16, 185, 129, 0.1)";
-            } catch (𝐞) {
-                console.log("Sync failed, using local time.");
+                const s = document.getElementById('sync-status');
+                s.innerText = "✓ SYNCED";
+                s.style.color = "#10b981";
+                s.style.background = "rgba(16, 185, 129, 0.1)";
+                s.style.borderColor = "rgba(16, 185, 129, 0.3)";
+            } catch (e) {
+                console.warn("Sync failed, using local time.");
             }
             updateQR();
         }
 
         function updateQR() {
-            const 𝐪𝐜 = document.getElementById("qrcode");
-            𝐪𝐜.innerHTML = "";
-            const 𝐤 = Math.floor((Date.now() + window.𝐝𝐫𝐢𝐟𝐭) / 5000); 
-            new QRCode(𝐪𝐜, { text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤, width: 480, height: 480 });
+            const qc = document.getElementById("qrcode");
+            qc.innerHTML = "";
+            const key = Math.floor((Date.now() + window.drift) / 5000); 
+            new QRCode(qc, { 
+                text: BASE_URL + "?key=" + key, 
+                width: 480, 
+                height: 480,
+                correctLevel : QRCode.CorrectLevel.M 
+            });
         }
 
         setInterval(() => {
-            const 𝐧 = document.getElementById('count');
-            let 𝐯 = parseInt(𝐧.innerText) - 1;
-            if (𝐯 <= 0) { updateQR(); 𝐯 = 5; }
-            𝐧.innerText = 𝐯;
+            const n = document.getElementById('count');
+            let v = parseInt(n.innerText) - 1;
+            if (v <= 0) { 
+                updateQR(); 
+                v = 5; 
+            }
+            n.innerText = v;
         }, 1000);
 
-        // Initial launch
+        // Initial setup
         syncClocks();
     </script>
 </body>
