@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NHS Attendance Control | High Performance</title>
+    <title>NHS Attendance | Auto-Sync Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { 
@@ -76,41 +76,38 @@
             text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
         }
         h1 { 
-            font-size: 4em; 
+            font-size: 3.5em; 
             margin: 0 0 20px 0; 
             letter-spacing: -2px; 
             font-weight: 800;
             color: #f8fafc;
+            text-align: center;
         }
-        p { color: #94a3b8; font-size: 1.3em; margin-top: 20px; }
-        .badge {
-            background: #10b981;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 8px;
-            font-size: 0.8em;
-            vertical-align: middle;
-            margin-left: 10px;
-        }
-        #debug-info {
+        p { color: #94a3b8; font-size: 1.2em; margin-top: 20px; }
+        #sync-status {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
-            font-size: 0.7em;
-            color: #475569;
+            top: 15px;
+            right: 20px;
+            font-size: 0.9em;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
         }
     </style>
 </head>
 <body>
 
+    <div id="sync-status">Syncing with Server...</div>
+
     <div class="admin-panel">
         <div class="input-group">
-            <label>Meeting Date <span class="badge">AUTO-SLASH</span></label>
+            <label>Meeting Date</label>
             <input type="text" class="editable-box" id="displayDate" value="02/11/2026" maxlength="10">
         </div>
 
         <div class="input-group">
-            <label>Form Password <span class="badge">SECURE</span></label>
+            <label>Form Password</label>
             <input type="text" class="editable-box" id="displayPass" value="Service">
         </div>
         
@@ -121,19 +118,17 @@
         <h1>NHS ATTENDANCE</h1>
         <div id="timer"><span id="count">5</span>s</div>
         <div class="box"><div id="qrcode"></div></div>
-        <p>Scan to sign in. Refreshes every 5 seconds.</p>
+        <p>Refreshes every 5s | Auto-Sync Active</p>
     </div>
 
-    <div id="debug-info">Offset: -7000ms | 𝐭ₑ Active</div>
-
     <script>
-        // YOUR LIVE DEPLOYMENT URL
-        const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbyCNhCpAatQHP9QTvMDH-dPUXXp7p7vChuHSNVvf8fxJ7MdABpvc5ox-FOXFhIZfGO1GQ/exec";
+        const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzwjFhh5vedRNU6WpDfJxeQ4EyOg74aF-TnQlJpoig9bJLokh6Vj1a0wdE308J48Gz2-g/exec";
         
-        // CALIBRATION: Baked in 7-second lead time
-        const 𝐭₀ = -7000; 
+        // Calibration Variables
+        let 𝐭₀ = -7000; // Start with 7s safety lead
+        let 𝐬𝐲𝐧𝐜𝐞𝐝 = false;
 
-        // Auto-formatter for the date input
+        // Date Formatter Logic
         const dateInput = document.getElementById('displayDate');
         dateInput.addEventListener('input', function (𝐞) {
             let 𝐯𝐚𝐥 = 𝐞.target.value.replace(/\D/g, '');
@@ -143,21 +138,35 @@
                 𝐟 = 𝐯𝐚𝐥.substring(0, 2);
                 if (𝐯𝐚𝐥.length > 2) {
                     𝐟 += '/' + 𝐯𝐚𝐥.substring(2, 4);
-                    if (𝐯𝐚𝐥.length > 4) {
-                        𝐟 += '/' + 𝐯𝐚𝐥.substring(4, 8);
-                    }
+                    if (𝐯𝐚𝐥.length > 4) 𝐟 += '/' + 𝐯𝐚𝐥.substring(4, 8);
                 }
             }
             𝐞.target.value = 𝐟;
         });
 
+        // AUTO-SYNC: Calculates clock drift between Host and Google
+        async function synchronize() {
+            const start = Date.now();
+            try {
+                const response = await fetch(𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync");
+                const data = await response.json();
+                const latency = (Date.now() - start) / 2;
+                
+                // Adjust t0: Server Time - (Local Time - Latency) - 7s Safety lead
+                𝐭₀ = (data.𝐭𝐢𝐦𝐞 - (Date.now() - latency)) - 7000;
+                
+                document.getElementById('sync-status').innerText = "✓ Server Synced (" + Math.round(𝐭₀) + "ms)";
+                𝐬𝐲𝐧𝐜𝐞𝐝 = true;
+                updateQR();
+            } catch (𝐞) {
+                document.getElementById('sync-status').innerText = "⚠ Sync Failed - Local Mode";
+                document.getElementById('sync-status').style.color = "#f87171";
+            }
+        }
+
         function updateQR() {
             document.getElementById('qrcode').innerHTML = "";
-            
-            // Apply Calibration Offset: System Time + Offset
             const 𝐭ₑ = Date.now() + 𝐭₀;
-            
-            // Calculate Key based on Calibrated Time
             const 𝐤𝐞𝐲 = Math.floor(𝐭ₑ / 5000); 
             
             new QRCode(document.getElementById("qrcode"), {
@@ -166,10 +175,8 @@
                 height: 480,
                 correctLevel : QRCode.CorrectLevel.M
             });
-            console.log("QR Updated with Key:", 𝐤𝐞𝐲, " (Offset applied)");
         }
 
-        // 5-second countdown timer
         let 𝐬𝐞𝐜 = 5;
         setInterval(() => {
             𝐬𝐞𝐜--;
@@ -180,8 +187,8 @@
             }
         }, 1000);
 
-        // Initial generation
-        updateQR();
+        // Run sync on load
+        synchronize();
     </script>
 </body>
 </html>
