@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NHS Attendance Control</title>
+    <title>NHS Attendance Control | High Performance</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { 
@@ -92,6 +92,13 @@
             vertical-align: middle;
             margin-left: 10px;
         }
+        #debug-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 0.7em;
+            color: #475569;
+        }
     </style>
 </head>
 <body>
@@ -117,48 +124,63 @@
         <p>Scan to sign in. Refreshes every 5 seconds.</p>
     </div>
 
-    <script>
-        // UPDATED URL
-        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbyCNhCpAatQHP9QTvMDH-dPUXXp7p7vChuHSNVvf8fxJ7MdABpvc5ox-FOXFhIZfGO1GQ/exec";
+    <div id="debug-info">Offset: -7000ms | 𝐭ₑ Active</div>
 
+    <script>
+        // YOUR LIVE DEPLOYMENT URL
+        const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbyCNhCpAatQHP9QTvMDH-dPUXXp7p7vChuHSNVvf8fxJ7MdABpvc5ox-FOXFhIZfGO1GQ/exec";
+        
+        // CALIBRATION: Baked in 7-second lead time
+        const 𝐭₀ = -7000; 
+
+        // Auto-formatter for the date input
         const dateInput = document.getElementById('displayDate');
-        dateInput.addEventListener('input', function (e) {
-            let val = e.target.value.replace(/\D/g, '');
-            if (val.length > 8) val = val.substring(0, 8);
-            let f = "";
-            if (val.length > 0) {
-                f = val.substring(0, 2);
-                if (val.length > 2) {
-                    f += '/' + val.substring(2, 4);
-                    if (val.length > 4) {
-                        f += '/' + val.substring(4, 8);
+        dateInput.addEventListener('input', function (𝐞) {
+            let 𝐯𝐚𝐥 = 𝐞.target.value.replace(/\D/g, '');
+            if (𝐯𝐚𝐥.length > 8) 𝐯𝐚𝐥 = 𝐯𝐚𝐥.substring(0, 8);
+            let 𝐟 = "";
+            if (𝐯𝐚𝐥.length > 0) {
+                𝐟 = 𝐯𝐚𝐥.substring(0, 2);
+                if (𝐯𝐚𝐥.length > 2) {
+                    𝐟 += '/' + 𝐯𝐚𝐥.substring(2, 4);
+                    if (𝐯𝐚𝐥.length > 4) {
+                        𝐟 += '/' + 𝐯𝐚𝐥.substring(4, 8);
                     }
                 }
             }
-            e.target.value = f;
+            𝐞.target.value = 𝐟;
         });
 
         function updateQR() {
             document.getElementById('qrcode').innerHTML = "";
-            const key = Math.floor(Date.now() / 5000); 
+            
+            // Apply Calibration Offset: System Time + Offset
+            const 𝐭ₑ = Date.now() + 𝐭₀;
+            
+            // Calculate Key based on Calibrated Time
+            const 𝐤𝐞𝐲 = Math.floor(𝐭ₑ / 5000); 
+            
             new QRCode(document.getElementById("qrcode"), {
-                text: BASE_URL + "?key=" + key,
+                text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤𝐞𝐲,
                 width: 480,
                 height: 480,
                 correctLevel : QRCode.CorrectLevel.M
             });
+            console.log("QR Updated with Key:", 𝐤𝐞𝐲, " (Offset applied)");
         }
 
-        let sec = 5;
+        // 5-second countdown timer
+        let 𝐬𝐞𝐜 = 5;
         setInterval(() => {
-            sec--;
-            document.getElementById('count').innerText = sec;
-            if(sec <= 0) { 
+            𝐬𝐞𝐜--;
+            document.getElementById('count').innerText = 𝐬𝐞𝐜;
+            if(𝐬𝐞𝐜 <= 0) { 
                 updateQR(); 
-                sec = 5; 
+                𝐬𝐞𝐜 = 5; 
             }
         }, 1000);
 
+        // Initial generation
         updateQR();
     </script>
 </body>
