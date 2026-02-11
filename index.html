@@ -37,7 +37,7 @@
     </div>
 
     <script>
-        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbw8-mFn4zMrjtS7AzRXumVEkurlNd9ZXJl-vKFAm1StDMbj7TL_LEeywWyufFr_MkR_/exec";
+        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzyzwKMRsR3_lFzwZV6FxtaxIkHZSYz5sGxaWPXvAz8LmFT9jy1j2HiwnfX3cuOq1GfIA/exec";
         
         let drift = 0; 
 
@@ -63,7 +63,6 @@
         function updateQR() {
             const qc = document.getElementById("qrcode");
             qc.innerHTML = "";
-            // The key is locked to the 5-second server interval
             const key = Math.floor((Date.now() + drift) / 5000); 
             
             new QRCode(qc, { 
@@ -84,9 +83,7 @@
             document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
 
-        // Initial Calibration
         syncWithServer();
-        // Re-calibrate every 2 minutes to ensure MacBook doesn't drift
         setInterval(syncWithServer, 120000);
     </script>
 </body>
