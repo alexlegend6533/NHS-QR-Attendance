@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NHS Attendance | Houston Performance</title>
+    <title>NHS Attendance | Final Sync</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background: #0f172a; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -37,9 +37,9 @@
     <script>
         const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbz7Q0bU3JR3Gk1iUlpexdpnIFspSOd1Lm-kPMZjEugr1a8vc9t2rPxW-QZgFPVj2bLZtQ/exec";
         
-        // This offset (-7000ms) ensures scanned codes are always valid by the time 
-        // they reach the server, accounting for network lag.
-        const 𝐎𝐅𝐅𝐒𝐄𝐓 = -7000;
+        // INCREASED OFFSET: -15000ms (15 seconds)
+        // This ensures the scan is "past" time for the server even if your clock is fast.
+        const 𝐎𝐅𝐅𝐒𝐄𝐓 = -15000;
 
         function updateQR() {
             const 𝐜𝐨𝐧𝐭𝐚𝐢𝐧𝐞𝐫 = document.getElementById("qrcode");
@@ -57,7 +57,6 @@
             });
         }
 
-        // Timer countdown logic
         setInterval(() => {
             const 𝐜 = document.getElementById('count');
             let 𝐬 = parseInt(𝐜.innerText) - 1;
@@ -68,7 +67,6 @@
             𝐜.innerText = 𝐬;
         }, 1000);
 
-        // Run immediately on load
         updateQR();
     </script>
 </body>
