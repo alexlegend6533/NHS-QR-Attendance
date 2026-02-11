@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NHS Attendance | High Performance Sync</title>
+    <title>NHS Attendance | Final Sync Fix</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background: #0f172a; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -31,17 +31,16 @@
         <h1>NHS ATTENDANCE</h1>
         <div id="timer"><span id="count">5</span>s</div>
         <div class="box"><div id="qrcode"></div></div>
-        <p>Refreshes every 5s | Auto-Sync Active</p>
+        <p>Auto-Sync Active</p>
     </div>
 
     <script>
         const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbz7Q0bU3JR3Gk1iUlpexdpnIFspSOd1Lm-kPMZjEugr1a8vc9t2rPxW-QZgFPVj2bLZtQ/exec";
         
-        // 1. GLOBAL STATE
-        window.𝐭₀ = -7000; // Default safety lead
+        // 1. MUST BE GLOBAL - TOP LEVEL
+        window.𝐭₀ = -7000;
         window.𝐬𝐲𝐧𝐜𝐞𝐝 = false;
 
-        // 2. GLOBAL CALLBACK (Must be on window for JSONP)
         window.handleSyncResponse = function(𝐝𝐚𝐭𝐚) {
             window.𝐭₀ = (𝐝𝐚𝐭𝐚.𝐭𝐢𝐦𝐞 - Date.now()) - 7000;
             const 𝐬 = document.getElementById('sync-status');
@@ -52,24 +51,11 @@
             updateQR();
         };
 
-        function startSync() {
-            const 𝐬𝐜 = document.createElement('script');
-            𝐬𝐜.src = 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync&callback=handleSyncResponse&ts=" + Date.now();
-            document.body.appendChild(𝐬𝐜);
-            
-            // Fail-safe: Force QR after 3 seconds if sync fails
-            setTimeout(() => {
-                if (!window.𝐬𝐲𝐧𝐜𝐞𝐝) {
-                    document.getElementById('sync-status').innerText = "⚠ Using Local Clock Lead";
-                    updateQR();
-                }
-            }, 3000);
-        }
-
         function updateQR() {
             const 𝐪 = document.getElementById("qrcode");
             if (!𝐪) return;
             𝐪.innerHTML = "";
+            // Use window.t0 explicitly
             const 𝐤 = Math.floor((Date.now() + window.𝐭₀) / 5000); 
             new QRCode(𝐪, { 
                 text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤, 
@@ -78,6 +64,7 @@
             });
         }
 
+        // Timer Loop
         setInterval(() => {
             const 𝐧 = document.getElementById('count');
             let 𝐯 = parseInt(𝐧.innerText) - 1;
@@ -85,7 +72,18 @@
             𝐧.innerText = 𝐯;
         }, 1000);
 
-        startSync();
+        // Execute Sync
+        const 𝐬𝐜 = document.createElement('script');
+        𝐬𝐜.src = 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync&callback=handleSyncResponse&ts=" + Date.now();
+        document.body.appendChild(𝐬𝐜);
+
+        // Fail-safe
+        setTimeout(() => {
+            if (!window.𝐬𝐲𝐧𝐜𝐞𝐝) {
+                document.getElementById('sync-status').innerText = "⚠ Using Local Clock Lead";
+                updateQR();
+            }
+        }, 4000);
     </script>
 </body>
 </html>
