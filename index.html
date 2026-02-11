@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NHS Attendance | Final Sync</title>
+    <title>NHS Attendance | Hybrid Sync</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background: #0f172a; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -12,62 +12,60 @@
         .editable-box { width: 100%; background: rgba(255, 255, 255, 0.03); border: 3px dashed #38bdf8; border-radius: 20px; padding: 25px; font-size: 3em; color: white; text-align: center; outline: none; }
         .box { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 0 80px rgba(56, 189, 248, 0.5); min-width: 480px; min-height: 480px; display: flex; align-items: center; justify-content: center; }
         #timer { font-size: 90px; color: #38bdf8; font-weight: 900; margin-bottom: 15px; }
-        #sync-status { position: absolute; top: 15px; right: 20px; font-size: 0.9em; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 5px 15px; border-radius: 20px; }
+        #sync-status { position: absolute; top: 15px; right: 20px; font-size: 0.9em; color: #facc15; background: rgba(250, 204, 21, 0.1); padding: 5px 15px; border-radius: 20px; }
     </style>
 </head>
 <body>
-    <div id="sync-status">✓ Houston Local Sync Active</div>
+    <div id="sync-status">⏳ Attempting Server Sync...</div>
     <div class="admin-panel">
-        <div class="input-group">
-            <label>Meeting Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="02/11/2026" maxlength="10">
-        </div>
-        <div class="input-group">
-            <label>Form Password</label>
-            <input type="text" class="editable-box" id="displayPass" value="Service">
-        </div>
+        <div class="input-group"><label>Meeting Date</label><input type="text" class="editable-box" id="displayDate" value="02/11/2026"></div>
+        <div class="input-group"><label>Form Password</label><input type="text" class="editable-box" id="displayPass" value="Service"></div>
     </div>
     <div class="qr-panel">
         <h1>NHS ATTENDANCE</h1>
         <div id="timer"><span id="count">5</span>s</div>
         <div class="box"><div id="qrcode"></div></div>
-        <p>Refreshes every 5s | Secure Rotation</p>
     </div>
 
     <script>
         const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbz7Q0bU3JR3Gk1iUlpexdpnIFspSOd1Lm-kPMZjEugr1a8vc9t2rPxW-QZgFPVj2bLZtQ/exec";
         
-        // INCREASED OFFSET: -15000ms (15 seconds)
-        // This ensures the scan is "past" time for the server even if your clock is fast.
-        const 𝐎𝐅𝐅𝐒𝐄𝐓 = -15000;
+        // Default to MacBook local time with a safety buffer
+        window.𝐭₀ = -10000; 
+
+        // JSONP Callback: This "catches" the time from Google
+        window.handleSyncResponse = function(𝐝𝐚𝐭𝐚) {
+            window.𝐭₀ = (𝐝𝐚𝐭𝐚.𝐭𝐢𝐦𝐞 - Date.now()) - 7000;
+            const 𝐬 = document.getElementById('sync-status');
+            𝐬.innerText = "✓ Server Synced";
+            𝐬.style.color = "#10b981";
+            𝐬.style.background = "rgba(16, 185, 129, 0.1)";
+            updateQR();
+        };
 
         function updateQR() {
-            const 𝐜𝐨𝐧𝐭𝐚𝐢𝐧𝐞𝐫 = document.getElementById("qrcode");
-            if (!𝐜𝐨𝐧𝐭𝐚𝐢𝐧𝐞𝐫) return;
-            
-            𝐜𝐨𝐧𝐭𝐚𝐢𝐧𝐞𝐫.innerHTML = "";
-            const 𝐭 = Date.now() + 𝐎𝐅𝐅𝐒𝐄𝐓;
-            const 𝐤 = Math.floor(𝐭 / 5000); 
-            
-            new QRCode(𝐜𝐨𝐧𝐭𝐚𝐢𝐧𝐞𝐫, {
-                text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤,
-                width: 480,
-                height: 480,
-                correctLevel : QRCode.CorrectLevel.M
-            });
+            const 𝐪 = document.getElementById("qrcode");
+            if (!𝐪) return;
+            𝐪.innerHTML = "";
+            const 𝐤 = Math.floor((Date.now() + window.𝐭₀) / 5000); 
+            new QRCode(𝐪, { text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤, width: 480, height: 480 });
         }
 
+        // Start countdown
         setInterval(() => {
-            const 𝐜 = document.getElementById('count');
-            let 𝐬 = parseInt(𝐜.innerText) - 1;
-            if (𝐬 <= 0) { 
-                updateQR(); 
-                𝐬 = 5; 
-            }
-            𝐜.innerText = 𝐬;
+            const 𝐧 = document.getElementById('count');
+            let 𝐯 = parseInt(𝐧.innerText) - 1;
+            if (𝐯 <= 0) { updateQR(); 𝐯 = 5; }
+            𝐧.innerText = 𝐯;
         }, 1000);
 
+        // 1. Show QR immediately using Apple Time
         updateQR();
+
+        // 2. Try to sync with Google in the background
+        const 𝐬𝐜 = document.createElement('script');
+        𝐬𝐜.src = 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync&callback=handleSyncResponse&ts=" + Date.now();
+        document.body.appendChild(𝐬𝐜);
     </script>
 </body>
 </html>
