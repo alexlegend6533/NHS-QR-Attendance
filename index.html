@@ -1,200 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NHS Attendance | Auto-Sync Dashboard</title>
+    <title>NHS Attendance | High Performance Sync</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: #0f172a; 
-            color: white; 
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .admin-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-right: 2px solid rgba(56, 189, 248, 0.2);
-            padding: 40px;
-            background: rgba(15, 23, 42, 0.8);
-        }
-        .qr-panel {
-            flex: 1.2;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .input-group {
-            width: 100%;
-            max-width: 450px;
-            margin-bottom: 40px;
-        }
-        label {
-            display: block;
-            color: #38bdf8;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 15px;
-            font-size: 1.1em;
-        }
-        .editable-box {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.03);
-            border: 3px dashed #38bdf8;
-            border-radius: 20px;
-            padding: 25px;
-            font-size: 3em;
-            color: white;
-            text-align: center;
-            outline: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .editable-box:focus {
-            background: rgba(56, 189, 248, 0.1);
-            border-style: solid;
-            box-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
-            transform: scale(1.02);
-        }
-        .box { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 25px; 
-            box-shadow: 0 0 80px rgba(56, 189, 248, 0.5); 
-        }
-        #timer { 
-            font-size: 90px; 
-            color: #38bdf8; 
-            font-weight: 900; 
-            margin-bottom: 15px;
-            text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
-        }
-        h1 { 
-            font-size: 3.5em; 
-            margin: 0 0 20px 0; 
-            letter-spacing: -2px; 
-            font-weight: 800;
-            color: #f8fafc;
-            text-align: center;
-        }
-        p { color: #94a3b8; font-size: 1.2em; margin-top: 20px; }
-        #sync-status {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 0.9em;
-            color: #facc15; /* Yellow while syncing */
-            background: rgba(250, 204, 21, 0.1);
-            padding: 5px 15px;
-            border-radius: 20px;
-        }
+        body { font-family: -apple-system, sans-serif; background: #0f172a; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .admin-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 2px solid rgba(56, 189, 248, 0.2); padding: 40px; background: rgba(15, 23, 42, 0.8); }
+        .qr-panel { flex: 1.2; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .input-group { width: 100%; max-width: 450px; margin-bottom: 40px; }
+        label { display: block; color: #38bdf8; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 15px; }
+        .editable-box { width: 100%; background: rgba(255, 255, 255, 0.03); border: 3px dashed #38bdf8; border-radius: 20px; padding: 25px; font-size: 3em; color: white; text-align: center; outline: none; }
+        .box { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 0 80px rgba(56, 189, 248, 0.5); min-width: 480px; min-height: 480px; display: flex; align-items: center; justify-content: center; }
+        #timer { font-size: 90px; color: #38bdf8; font-weight: 900; margin-bottom: 15px; }
+        #sync-status { position: absolute; top: 15px; right: 20px; font-size: 0.9em; color: #facc15; background: rgba(250, 204, 21, 0.1); padding: 5px 15px; border-radius: 20px; }
     </style>
 </head>
 <body>
-
     <div id="sync-status">⚡ Syncing with Google Server...</div>
-
     <div class="admin-panel">
-        <div class="input-group">
-            <label>Meeting Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="02/11/2026" maxlength="10">
-        </div>
-
-        <div class="input-group">
-            <label>Form Password</label>
-            <input type="text" class="editable-box" id="displayPass" value="Service">
-        </div>
-        
-        <p>Times controlled by Settings sheet.</p>
+        <div class="input-group"><label>Meeting Date</label><input type="text" class="editable-box" id="displayDate" value="02/11/2026" maxlength="10"></div>
+        <div class="input-group"><label>Form Password</label><input type="text" class="editable-box" id="displayPass" value="Service"></div>
     </div>
-
     <div class="qr-panel">
         <h1>NHS ATTENDANCE</h1>
         <div id="timer"><span id="count">5</span>s</div>
         <div class="box"><div id="qrcode"></div></div>
-        <p>Refreshes every 5s | Auto-Sync Active</p>
     </div>
 
     <script>
         const 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbyq3BhG420ZH2HSVjMNu_02CcvF7EQC-BWdKdhhb4hLe4DehVTLkAdMUYm7N3FoW7-ViQ/exec";
-        
-        let 𝐭₀ = -7000; // Default 7s lead
+        let 𝐭₀ = -7000; 
         let 𝐬𝐲𝐧𝐜𝐞𝐝 = false;
 
-        // Date Formatter
-        const dateInput = document.getElementById('displayDate');
-        dateInput.addEventListener('input', function (𝐞) {
-            let 𝐯𝐚𝐥 = 𝐞.target.value.replace(/\D/g, '');
-            if (𝐯𝐚𝐥.length > 8) 𝐯𝐚𝐥 = 𝐯𝐚𝐥.substring(0, 8);
-            let 𝐟 = "";
-            if (𝐯𝐚𝐥.length > 0) {
-                𝐟 = 𝐯𝐚𝐥.substring(0, 2);
-                if (𝐯𝐚𝐥.length > 2) {
-                    𝐟 += '/' + 𝐯𝐚𝐥.substring(2, 4);
-                    if (𝐯𝐚𝐥.length > 4) 𝐟 += '/' + 𝐯𝐚𝐥.substring(4, 8);
-                }
-            }
-            𝐞.target.value = 𝐟;
-        });
+        // CRITICAL: Global callback for JSONP bypass
+        window.handleSyncResponse = function(𝐝𝐚𝐭𝐚) {
+            𝐭₀ = (𝐝𝐚𝐭𝐚.𝐭𝐢𝐦𝐞 - Date.now()) - 7000;
+            const 𝐬 = document.getElementById('sync-status');
+            𝐬.innerText = "✓ Server Synced (" + Math.round(𝐭₀) + "ms)";
+            𝐬.style.color = "#10b981";
+            𝐬.style.background = "rgba(16, 185, 129, 0.1)";
+            𝐬𝐲𝐧𝐜𝐞𝐝 = true;
+            updateQR();
+        };
 
-        // HIGH-PERFORMANCE JSONP SYNC
         function syncTime() {
-            const 𝐬𝐜𝐫𝐢𝐩𝐭 = document.createElement('script');
-            const 𝐬𝐭𝐚𝐫𝐭 = Date.now();
-            
-            // Callback function that Google calls
-            window.handleSyncResponse = function(𝐝𝐚𝐭𝐚) {
-                const 𝐥𝐚𝐭𝐞𝐧𝐜𝐲 = (Date.now() - 𝐬𝐭𝐚𝐫𝐭) / 2;
-                // Calculate drift + 7s lead
-                𝐭₀ = (𝐝𝐚𝐭𝐚.𝐭𝐢𝐦𝐞 - (Date.now() - 𝐥𝐚𝐭𝐞𝐧𝐜𝐲)) - 7000;
-                
-                const 𝐬𝐭𝐚𝐭𝐮𝐬 = document.getElementById('sync-status');
-                𝐬𝐭𝐚𝐭𝐮𝐬.innerText = "✓ Server Synced (" + Math.round(𝐭₀) + "ms)";
-                𝐬𝐭𝐚𝐭𝐮𝐬.style.color = "#10b981";
-                𝐬𝐭𝐚𝐭𝐮𝐬.style.background = "rgba(16, 185, 129, 0.1)";
-                
-                𝐬𝐲𝐧𝐜𝐞𝐝 = true;
-                updateQR();
-                
-                // Cleanup
-                document.body.removeChild(𝐬𝐜𝐫𝐢𝐩𝐭);
-                delete window.handleSyncResponse;
-            };
-
-            𝐬𝐜𝐫𝐢𝐩𝐭.src = 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync&callback=handleSyncResponse";
-            document.body.appendChild(𝐬𝐜𝐫𝐢𝐩𝐭);
+            const 𝐬𝐜 = document.createElement('script');
+            𝐬𝐜.src = 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?action=sync&callback=handleSyncResponse&ts=" + Date.now();
+            document.body.appendChild(𝐬𝐜);
         }
 
         function updateQR() {
-            document.getElementById('qrcode').innerHTML = "";
-            const 𝐭ₑ = Date.now() + 𝐭₀;
-            const 𝐤𝐞𝐲 = Math.floor(𝐭ₑ / 5000); 
-            
-            new QRCode(document.getElementById("qrcode"), {
-                text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤𝐞𝐲,
-                width: 480,
-                height: 480,
-                correctLevel : QRCode.CorrectLevel.M
-            });
+            const 𝐪 = document.getElementById("qrcode");
+            if (!𝐪) return;
+            𝐪.innerHTML = "";
+            const 𝐤 = Math.floor((Date.now() + 𝐭₀) / 5000); 
+            new QRCode(𝐪, { text: 𝐁𝐀𝐒𝐄_𝐔𝐑𝐋 + "?key=" + 𝐤, width: 480, height: 480 });
         }
 
-        let 𝐬𝐞𝐜 = 5;
         setInterval(() => {
-            𝐬𝐞𝐜--;
-            document.getElementById('count').innerText = 𝐬𝐞𝐜;
-            if(𝐬𝐞𝐜 <= 0) { 
-                updateQR(); 
-                𝐬𝐞𝐜 = 5; 
-            }
+            const 𝐧 = document.getElementById('count');
+            let 𝐯 = parseInt(𝐧.innerText) - 1;
+            if (𝐯 <= 0) { updateQR(); 𝐯 = 5; }
+            𝐧.innerText = 𝐯;
         }, 1000);
 
-        // Initial Sync
         syncTime();
     </script>
 </body>
