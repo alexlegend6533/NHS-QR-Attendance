@@ -126,12 +126,12 @@
         <div class="qr-container">
             <div id="qrcode"></div>
         </div>
-        <div class="footer-note">IDENTITY VERIFICATION ACTIVE</div>
+        <div class="footer-note">IDENTITY VERIFICATION ACTIVE (1HR LOCKOUT)</div>
     </div>
 
     <script>
         // Updated to your newest deployment URL
-        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzBni0Uo2ULlUmnzzxsxMQp6O0wYsyJi2252CuD7EPG-Vz6-QwRKgGxITr8TPQDe9K67Q/exec";
+        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzy0bBCAwHT6G_zUiBSuMproqxy32Yc0VLB-uQOi8bnAK5-ebDhCivlQmLY38tcIkFjWg/exec";
         
         let drift = 0; 
 
@@ -140,9 +140,14 @@
                 const start = Date.now();
                 const res = await fetch(BASE_URL + "?action=sync");
                 const data = await res.json();
-                // Handshake alignment
+                // Handshake alignment to prevent negative timer glitches
                 drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
-            } catch (e) { console.warn("Sync failed."); }
+                document.getElementById('sync-status').style.color = "#10b981";
+                document.getElementById('sync-status').innerText = "● SYSTEM SYNCED";
+            } catch (e) { 
+                document.getElementById('sync-status').style.color = "#f87171";
+                document.getElementById('sync-status').innerText = "● SYNC FAILED";
+            }
             genQR();
         }
 
@@ -150,7 +155,7 @@
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
             
-            // Calculate Key Index
+            // Calculate Key Index using Drift for perfect server alignment
             const now = Date.now() + drift;
             const key = Math.floor(now / 5000); 
             
@@ -172,8 +177,8 @@
             document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
 
+        // Immediate launch and re-sync every 2 minutes
         syncServer();
-        // Periodic Re-sync to maintain accuracy
         setInterval(syncServer, 120000);
     </script>
 </body>
