@@ -1,174 +1,117 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>NHS | Attendance Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        :root {
-            --bg: #0b0f1a;
-            --card: #1e293b;
-            --accent: #38bdf8;
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-        }
+// ===== CONFIGURATION =====
+const SHEET_ID = "1GcZObtWsmu_6vpFf-HKOFSYoMEKh32bs2o5PrVpeov4";
+const SCHOOL_DOMAIN = "houstonchristian.org";
 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: var(--bg); 
-            color: var(--text-main); 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
+function doGet(e) {
+  try {
+    // 1. SYNC HANDSHAKE (Standardized)
+    if (e.parameter.action === "sync") {
+      return ContentService.createTextOutput(JSON.stringify({ serverTime: Math.floor(Date.now()) }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
-        /* Side Configuration Panel */
-        .admin-panel { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            background: #0f172a; 
-            padding: 60px;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-        }
+    const userEmail = Session.getActiveUser().getEmail().toLowerCase();
+    
+    if (!userEmail || !userEmail.endsWith("@" + SCHOOL_DOMAIN)) {
+      return HtmlService.createHtmlOutput(getStyledError("Access Restricted", "Please use your Houston Christian email."));
+    }
 
-        /* Main QR Display */
-        .qr-panel { 
-            flex: 1.5; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            text-align: center; 
-            background: radial-gradient(circle at center, #1e293b 0%, #0b0f1a 100%); 
-        }
+    if (hasAlreadySucceeded(userEmail)) {
+      return HtmlService.createHtmlOutput(getStyledError("Check-in Complete", "Your attendance is already recorded."));
+    }
 
-        .input-group { width: 100%; max-width: 380px; margin-bottom: 40px; }
-        
-        label { 
-            display: block; 
-            color: var(--accent); 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            letter-spacing: 1.5px; 
-            margin-bottom: 15px; 
-            font-size: 0.75rem; 
-        }
+    // 2. EXPLICIT KEY BUFFER (±1 Key)
+    if (e.parameter.key) {
+      const scannedKey = Number(e.parameter.key);
+      const serverKey = Math.floor(Date.now() / 5000);
+      
+      // Explicitly allow previous, current, and next key indices
+      const isAuthorized = (
+        scannedKey === serverKey || 
+        scannedKey === (serverKey - 1) || 
+        scannedKey === (serverKey + 1)
+      );
+      
+      if (!isAuthorized) {
+        return HtmlService.createHtmlOutput(getStyledError("Your Session Temporarily Timed Out", "Scan the QR Code again to continue."));
+      }
 
-        .editable-box { 
-            width: 100%; 
-            background: rgba(255, 255, 255, 0.03); 
-            border: 1px solid rgba(56, 189, 248, 0.2); 
-            border-radius: 16px; 
-            padding: 20px; 
-            font-size: 2.5rem; 
-            color: white; 
-            text-align: center; 
-            outline: none; 
-            transition: 0.3s;
-            font-weight: 300;
-        }
+      // 3. POISON CHECK (One key per email)
+      if (isKeyPoisoned(scannedKey, userEmail)) {
+        return HtmlService.createHtmlOutput(getStyledError("Link Unavailable", "This QR session was already claimed by another user."));
+      }
 
-        .editable-box:focus { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
+      logActivation(userEmail, scannedKey);
 
-        .qr-container { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 28px; 
-            box-shadow: 0 0 80px rgba(56, 189, 248, 0.15); 
-            margin: 30px 0;
-        }
+      const token = Utilities.getUuid();
+      return HtmlService.createHtmlOutput(getHTML(token, userEmail, scannedKey))
+          .setTitle('NHS Attendance Portal')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1');
+    }
 
-        #timer { 
-            font-size: 100px; 
-            color: var(--accent); 
-            font-weight: 200; 
-            margin-bottom: -10px;
-            font-variant-numeric: tabular-nums;
-        }
+    return HtmlService.createHtmlOutput(getStyledError("Invalid Access", "Please scan a valid QR code."));
+  } catch (err) {
+    return HtmlService.createHtmlOutput(getStyledError("System Update", "Please try scanning again in a moment."));
+  }
+}
 
-        #sync-status { 
-            position: absolute; 
-            top: 30px; 
-            right: 30px; 
-            font-size: 0.7rem; 
-            font-weight: 700;
-            letter-spacing: 1px; 
-            color: #10b981; 
-            background: rgba(16, 185, 129, 0.1); 
-            padding: 10px 20px; 
-            border-radius: 40px; 
-            border: 1px solid rgba(16, 185, 129, 0.2); 
-        }
+function isKeyPoisoned(key, email) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const log = ss.getSheetByName("SecurityLog") || ss.insertSheet("SecurityLog");
+  const data = log.getDataRange().getValues();
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (data[i][4] == key && data[i][2] !== email) return true;
+  }
+  return false;
+}
 
-        h1 { font-weight: 800; letter-spacing: 4px; font-size: 1.2rem; color: var(--text-dim); }
-        .footer-note { margin-top: 20px; color: var(--text-dim); font-size: 0.8rem; letter-spacing: 1px; }
-    </style>
-</head>
-<body>
-    <div id="sync-status">● SYSTEM LIVE</div>
+function hasAlreadySucceeded(email) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const log = ss.getSheetByName("SecurityLog");
+  if (!log) return false;
+  const data = log.getDataRange().getValues();
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (data[i][2] === email && data[i][1] === "SUCCESS") return true;
+  }
+  return false;
+}
 
-    <div class="admin-panel">
-        <div class="input-group">
-            <label>Session Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="02/11/2026">
-        </div>
-        <div class="input-group">
-            <label>Meeting Password</label>
-            <input type="text" class="editable-box" id="displayPass" value="Service">
-        </div>
-    </div>
+function logActivation(email, key) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let log = ss.getSheetByName("SecurityLog") || ss.insertSheet("SecurityLog");
+  log.appendRow(["ACTIVATED", "LOCKED", email, new Date(), key]);
+}
 
-    <div class="qr-panel">
-        <h1>NHS CHECK-IN</h1>
-        <div id="timer">5s</div>
-        <div class="qr-container">
-            <div id="qrcode"></div>
-        </div>
-        <div class="footer-note">IDENTITY VERIFICATION ACTIVE</div>
-    </div>
+function verifyAttendance(date, pass, token, usedKey) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const userEmail = Session.getActiveUser().getEmail().toLowerCase();
+  const settings = ss.getSheetByName("Settings").getDataRange().getValues();
+  let validRow = -1;
+  for (var i = 1; i < settings.length; i++) {
+    let sDate = Utilities.formatDate(new Date(settings[i][0]), "GMT", "MM/dd/yyyy");
+    if (sDate === date && settings[i][1].toString().trim() === pass.trim()) { 
+      validRow = i; break; 
+    }
+  }
+  if (validRow === -1) return {success: false, message: "Incorrect password or date."};
+  const targetSheet = ss.getSheetByName(date);
+  if (!targetSheet) return {success: false, message: "Roster not found."};
+  const emails = targetSheet.getRange("E2:E" + targetSheet.getLastRow()).getValues();
+  for (var j = 0; j < emails.length; j++) {
+    if (emails[j][0].toLowerCase() === userEmail) {
+      targetSheet.getRange(j + 2, 3).setValue(true);
+      targetSheet.getRange(j + 2, 6).setValue(new Date().toLocaleTimeString());
+      ss.getSheetByName("SecurityLog").appendRow([token, "SUCCESS", userEmail, new Date(), usedKey]);
+      return {success: true};
+    }
+  }
+  return {success: false, message: "Email not on roster."};
+}
 
-    <script>
-        // Updated to your newest deployment URL
-        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbz6rQDNUwGtUnPZqg20f-8SZi12JLvVZBmpzFzlgTj5bKQH18ADFsvigjfD_hr-eRI6zw/exec";
-        
-        let drift = 0; 
+function getStyledError(title, msg) {
+  return `<!DOCTYPE html><html><head><style>body{font-family:-apple-system,sans-serif;background:#0b0f1a;color:white;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;text-align:center;padding:20px;} .card{background:#1e293b;padding:40px;border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,0.3);max-width:400px;border:1px solid rgba(56,189,248,0.2);} h1{color:#38bdf8;margin-bottom:16px;font-size:22px;} p{color:#94a3b8;line-height:1.6;}</style></head><body><div class="card"><h1>${title}</h1><p>${msg}</p></div></body></html>`;
+}
 
-        async function syncServer() {
-            try {
-                const start = Date.now();
-                const res = await fetch(BASE_URL + "?action=sync");
-                const data = await res.json();
-                drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
-            } catch (e) { console.warn("Sync failed."); }
-            genQR();
-        }
-
-        function genQR() {
-            const container = document.getElementById("qrcode");
-            container.innerHTML = "";
-            const key = Math.floor((Date.now() + drift) / 5000); 
-            
-            new QRCode(container, { 
-                text: `${BASE_URL}?key=${key}`, 
-                width: 400, 
-                height: 400,
-                correctLevel : QRCode.CorrectLevel.M 
-            });
-        }
-
-        let timeLeft = 5;
-        setInterval(() => {
-            timeLeft--;
-            if (timeLeft <= 0) { genQR(); timeLeft = 5; }
-            document.getElementById('timer').innerText = timeLeft + "s";
-        }, 1000);
-
-        syncServer();
-        setInterval(syncServer, 120000);
-    </script>
-</body>
-</html>
+function getHTML(token, userEmail, key) {
+  return `<!DOCTYPE html><html><head><style>body{font-family:-apple-system,sans-serif;background:#0b0f1a;color:white;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;padding:20px;} .card{background:#1e293b;padding:40px;border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,0.3);width:100%;max-width:380px;text-align:center;border:1px solid rgba(56,189,248,0.1);} h2{margin-bottom:8px;font-weight:700;} .user-tag{background:rgba(56,189,248,0.1);color:#38bdf8;padding:6px 12px;border-radius:20px;font-size:12px;margin-bottom:24px;display:inline-block;border:1px solid rgba(56,189,248,0.2);} input{width:100%;padding:16px;margin:12px 0;background:#0f172a;border:1px solid #334155;border-radius:12px;color:white;font-size:16px;box-sizing:border-box;} button{width:100%;padding:16px;background:#38bdf8;color:#0b0f1a;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:16px;margin-top:20px;} #msg{margin-top:15px;font-size:14px;color:#f87171;}</style></head><body><div class="card" id="c"><h2>NHS Portal</h2><div class="user-tag">${userEmail}</div><input type="text" id="d" placeholder="Date (MM/DD/YYYY)"><input type="password" id="p" placeholder="Form Password"><div id="msg"></div><button onclick="sub()">Verify Attendance</button></div><script>function sub(){const b=document.querySelector('button');b.innerText='Verifying...';b.disabled=true;google.script.run.withSuccessHandler(r=>{if(r.success){document.getElementById('c').innerHTML="<h1 style='color:#10b981;font-size:50px;'>✓</h1><h2>Verified</h2><p style='color:#94a3b8'>Attendance recorded.</p>"}else{document.getElementById('msg').innerText=r.message;b.innerText='Verify Attendance';b.disabled=false;}}).verifyAttendance(document.getElementById('d').value,document.getElementById('p').value,"${token}","${key}")}</script></body></html>`;
+}
