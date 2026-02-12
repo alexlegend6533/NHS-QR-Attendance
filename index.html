@@ -1,47 +1,69 @@
-// Replace the script section in your preferred index.html with this
-const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbyi930XdjODSUENt9h_-A5nus6GLm9WxFEf-O-KNiy-NnD80YtL4e33NChWvvWL4ljZiQ/exec";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NHS | Attendance Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b0f1a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
 
-let drift = 0; 
-
-async function syncServer() {
-    try {
-        const start = Date.now();
-        const res = await fetch(BASE_URL + "?action=sync");
-        const data = await res.json();
-        // Maintain QR sync with server clock
-        drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
-        document.getElementById('sync-status').innerText = "● SYSTEM SYNCED";
-    } catch (e) { 
-        document.getElementById('sync-status').innerText = "● SYNC FAILED";
-    }
-    genQR();
-}
-
-function genQR() {
-    const container = document.getElementById("qrcode");
-    container.innerHTML = "";
-    
-    // Calculate Key Index
-    const now = Date.now() + drift;
-    const key = Math.floor(now / 5000); 
-    
-    new QRCode(container, { 
-        text: `${BASE_URL}?key=${key}`, 
-        width: 400, 
-        height: 400,
-        correctLevel : QRCode.CorrectLevel.M 
-    });
-}
-
-let timeLeft = 5;
-setInterval(() => {
-    timeLeft--;
-    if (timeLeft <= 0) { 
-        genQR(); 
-        timeLeft = 5; 
-    }
-    document.getElementById('timer').innerText = timeLeft + "s";
-}, 1000);
-
-syncServer();
-setInterval(syncServer, 120000);
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .admin-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0f172a; padding: 60px; border-right: 1px solid rgba(255, 255, 255, 0.05); }
+        .qr-panel { flex: 1.5; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: radial-gradient(circle at center, #1e293b 0%, #0b0f1a 100%); }
+        .input-group { width: 100%; max-width: 380px; margin-bottom: 40px; }
+        label { display: block; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; font-size: 0.75rem; }
+        .editable-box { width: 100%; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 16px; padding: 20px; font-size: 2.5rem; color: white; text-align: center; outline: none; font-weight: 300; }
+        .qr-container { background: white; padding: 30px; border-radius: 28px; box-shadow: 0 0 80px rgba(56, 189, 248, 0.15); margin: 30px 0; }
+        #timer { font-size: 100px; color: var(--accent); font-weight: 200; margin-bottom: -10px; font-variant-numeric: tabular-nums; }
+        #sync-status { position: absolute; top: 30px; right: 30px; font-size: 0.7rem; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 10px 20px; border-radius: 40px; border: 1px solid rgba(16, 185, 129, 0.2); }
+        h1 { font-weight: 800; letter-spacing: 4px; font-size: 1.2rem; color: var(--text-dim); }
+    </style>
+</head>
+<body>
+    <div id="sync-status">● SYSTEM LIVE</div>
+    <div class="admin-panel">
+        <div class="input-group"><label>Session Date</label><input type="text" class="editable-box" id="displayDate" value="02/11/2026"></div>
+        <div class="input-group"><label>Meeting Password</label><input type="text" class="editable-box" id="displayPass" value="Service"></div>
+    </div>
+    <div class="qr-panel">
+        <h1>NHS CHECK-IN</h1>
+        <div id="timer">5s</div>
+        <div class="qr-container"><div id="qrcode"></div></div>
+        <div style="color:var(--text-dim); font-size: 0.8rem; letter-spacing: 1px;">ID-ENTRY MODE (1HR HARDWARE LOCK)</div>
+    </div>
+    <script>
+        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbxZ--yOrqaUoRlHkhS_mw9wLh6QBfEvaw5uu82yj8OFs_Lve6e4ZM8G6-kJcwrYtc3k9A/exec";
+        let drift = 0; 
+        async function syncServer() {
+            try {
+                const start = Date.now();
+                const res = await fetch(BASE_URL + "?action=sync");
+                const data = await res.json();
+                drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
+                document.getElementById('sync-status').innerText = "● SYSTEM SYNCED";
+            } catch (e) { document.getElementById('sync-status').innerText = "● SYNC FAILED"; }
+            genQR();
+        }
+        function genQR() {
+            const container = document.getElementById("qrcode");
+            container.innerHTML = "";
+            const key = Math.floor((Date.now() + drift) / 5000); 
+            new QRCode(container, { text: `${BASE_URL}?key=${key}`, width: 400, height: 400 });
+        }
+        let timeLeft = 5;
+        setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) { genQR(); timeLeft = 5; }
+            document.getElementById('timer').innerText = timeLeft + "s";
+        }, 1000);
+        syncServer();
+        setInterval(syncServer, 120000);
+    </script>
+</body>
+</html>
