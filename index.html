@@ -8,157 +8,99 @@
     <style>
         :root {
             --bg: #0b0f1a;
-            --card: #1e293b;
             --accent: #38bdf8;
             --success: #10b981;
             --text-main: #f8fafc;
             --text-dim: #94a3b8;
         }
-
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: var(--bg); 
-            color: var(--text-main); 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
+            font-family: -apple-system, sans-serif; 
+            background: var(--bg); color: var(--text-main); 
+            margin: 0; display: flex; height: 100vh; overflow: hidden; 
         }
-
         .admin-panel { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            background: #0f172a; 
-            padding: 60px;
+            flex: 1; display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; background: #0f172a; padding: 60px;
             border-right: 1px solid rgba(255, 255, 255, 0.05);
-            z-index: 2;
         }
-
         .qr-panel { 
-            flex: 1.5; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            text-align: center; 
+            flex: 1.5; display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; text-align: center; 
             background: radial-gradient(circle at center, #1e293b 0%, #0b0f1a 100%); 
         }
-
-        .input-group { width: 100%; max-width: 380px; margin-bottom: 40px; }
-        
-        label { 
-            display: block; 
-            color: var(--accent); 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-            margin-bottom: 12px; 
-            font-size: 0.7rem; 
-        }
-
         .editable-box { 
-            width: 100%; 
-            background: rgba(255, 255, 255, 0.03); 
-            border: 1px solid rgba(56, 189, 248, 0.2); 
-            border-radius: 16px; 
-            padding: 24px; 
-            font-size: 2rem; 
-            color: white; 
-            text-align: center; 
-            outline: none; 
-            transition: 0.3s;
+            width: 100%; max-width: 380px; background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 16px; 
+            padding: 24px; font-size: 2rem; color: white; text-align: center; margin-bottom: 40px;
         }
-
         .qr-container { 
-            background: white; 
-            padding: 25px; 
-            border-radius: 32px; 
-            box-shadow: 0 0 100px rgba(56, 189, 248, 0.15); 
-            margin: 20px 0;
+            background: white; padding: 25px; border-radius: 32px; 
+            box-shadow: 0 0 100px rgba(56, 189, 248, 0.15); margin: 20px 0;
         }
-
-        #timer { 
-            font-size: 120px; 
-            color: var(--accent); 
-            font-weight: 100; 
-            font-variant-numeric: tabular-nums;
-        }
-
+        #timer { font-size: 120px; color: var(--accent); font-weight: 100; }
         #status-badge { 
-            position: absolute; 
-            top: 40px; 
-            right: 40px; 
-            font-size: 0.75rem; 
-            font-weight: 800;
-            color: var(--success); 
-            background: rgba(16, 185, 129, 0.1); 
-            padding: 12px 24px; 
-            border-radius: 100px; 
-            border: 1px solid rgba(16, 185, 129, 0.3); 
+            position: absolute; top: 40px; right: 40px; font-size: 0.75rem; 
+            font-weight: 800; color: var(--success); background: rgba(16, 185, 129, 0.1); 
+            padding: 12px 24px; border-radius: 100px; border: 1px solid rgba(16, 185, 129, 0.3); 
         }
-
-        h1 { font-weight: 900; letter-spacing: 6px; font-size: 1.5rem; color: var(--text-dim); }
     </style>
 </head>
 <body>
-    <div id="status-badge">● UNIVERSAL UTC ENGINE ACTIVE</div>
+    <div id="status-badge">● SYNCING WITH GOOGLE...</div>
 
     <div class="admin-panel">
-        <div class="input-group">
-            <label>Session Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="02/11/2026">
-        </div>
-        <div class="input-group">
-            <label>Meeting Password</label>
-            <input type="text" class="editable-box" id="displayPass" value="Service">
-        </div>
+        <input type="text" class="editable-box" id="displayDate" value="02/11/2026">
+        <input type="text" class="editable-box" id="displayPass" value="Service">
     </div>
 
     <div class="qr-panel">
-        <h1>NHS CHECK-IN</h1>
+        <h1 style="letter-spacing:6px; color:var(--text-dim); font-size: 1.5rem;">NHS CHECK-IN</h1>
         <div id="timer">5s</div>
-        <div class="qr-container">
-            <div id="qrcode"></div>
-        </div>
+        <div class="qr-container"><div id="qrcode"></div></div>
         <div style="color:var(--text-dim); font-size: 0.75rem; letter-spacing: 2px;">
-            GRACE PERIOD: 2 CYCLES (10s)
+            SERVER-SIDE COUNTER MODE (CLOCK INDEPENDENT)
         </div>
     </div>
 
     <script>
-        // 🚀 UPDATED DEPLOYMENT URL
-        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbyqZ4p49nJvqo3TFlqPrwzKzusBn80jSdYfhpOJbfwBGpUZK-tNIJ0WfjRwjyU146qqRg/exec";
-        
+        const DEPLOY_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzeHVjEz0_n2s2nrFn3t0GrOz6IfKQYnAQvc_8cmyWAZ19NuYNjkq8RLrHxOJGpT6ZxSw/exec";
         let timeLeft = 5;
-        let qr = new QRCode(document.getElementById("qrcode"), { 
-            width: 380, 
-            height: 380,
-            correctLevel : QRCode.CorrectLevel.M 
-        });
+        let qr = new QRCode(document.getElementById("qrcode"), { width: 380, height: 380 });
+        let isSyncing = false;
 
-        function updateQR() {
-            // THE UTC FIX: getTime() is identical on every device in the world right now
-            const now = new Date().getTime(); 
-            const key = Math.floor(now / 5000); 
-
-            qr.clear();
-            qr.makeCode(`${BASE_URL}?key=${key}`);
+        async function fetchNewKey() {
+            if (isSyncing) return;
+            isSyncing = true;
+            try {
+                const response = await fetch(DEPLOY_URL + "?action=sync");
+                const data = await response.json();
+                
+                qr.clear();
+                qr.makeCode(DEPLOY_URL + "?key=" + data.key);
+                
+                timeLeft = 5;
+                document.getElementById('status-badge').style.color = "#10b981";
+                document.getElementById('status-badge').innerText = "● SERVER SYNCED";
+            } catch (e) {
+                document.getElementById('status-badge').style.color = "#f87171";
+                document.getElementById('status-badge').innerText = "● RECONNECTING...";
+            } finally {
+                isSyncing = false;
+            }
         }
 
         setInterval(() => {
+            if (document.getElementById('status-badge').innerText.includes("RECONNECTING")) return;
+            
             timeLeft--;
             if (timeLeft <= 0) {
-                updateQR();
-                timeLeft = 5;
+                fetchNewKey();
             }
             document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
 
-        // Initial launch
-        updateQR();
+        // Initial Start
+        fetchNewKey();
     </script>
 </body>
 </html>
