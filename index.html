@@ -107,7 +107,7 @@
     </style>
 </head>
 <body>
-    <div id="sync-status">● SYSTEM LIVE</div>
+    <div id="sync-status">● CONNECTING...</div>
 
     <div class="admin-panel">
         <div class="input-group">
@@ -126,34 +126,37 @@
         <div class="qr-container">
             <div id="qrcode"></div>
         </div>
-        <div class="footer-note">IDENTITY VERIFICATION ACTIVE</div>
+        <div class="footer-note">SERVER-AUTHORITATIVE LOCK ACTIVE</div>
     </div>
 
     <script>
-        // Updated to your newest deployment URL
-        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbyS-89LHF_vTZ5BCVv0gM4SymlIWJ41OBPgZGreulI_T1yr_yDpq_2urXgkDHvnkl8Cgg/exec";
+        const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzWX5HiqCKtXR6hICpgHsExNwgSdwY72dk0NcoXe6ml_19IbD-DsvVuizHD8C3XbVDvNw/exec";
         
-        let drift = 0; 
+        let lastKey = null;
+        let timeLeft = 5;
 
-        async function syncServer() {
+        async function pulse() {
             try {
-                const start = Date.now();
                 const res = await fetch(BASE_URL + "?action=sync");
                 const data = await res.json();
-                // Handshake alignment
-                drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
-            } catch (e) { console.warn("Sync failed."); }
-            genQR();
+                
+                // If the server rotated the key, update the QR
+                if (data.key !== lastKey) {
+                    lastKey = data.key;
+                    genQR(data.key);
+                    timeLeft = 5; // Reset local visual timer on actual rotation
+                }
+                
+                document.getElementById('sync-status').innerText = "● SERVER LIVE";
+            } catch (e) { 
+                document.getElementById('sync-status').innerText = "● OFFLINE";
+                console.warn("Pulse failed."); 
+            }
         }
 
-        function genQR() {
+        function genQR(key) {
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
-            
-            // Calculate Key Index
-            const now = Date.now() + drift;
-            const key = Math.floor(now / 5000); 
-            
             new QRCode(container, { 
                 text: `${BASE_URL}?key=${key}`, 
                 width: 400, 
@@ -162,19 +165,17 @@
             });
         }
 
-        let timeLeft = 5;
+        // Visual countdown (strictly for display, rotation happens on pulse)
         setInterval(() => {
-            timeLeft--;
-            if (timeLeft <= 0) { 
-                genQR(); 
-                timeLeft = 5; 
+            if (timeLeft > 1) {
+                timeLeft--;
             }
             document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
 
-        syncServer();
-        // Periodic Re-sync to maintain accuracy
-        setInterval(syncServer, 120000);
+        // Heartbeat to server every 2.5s to ensure rotation is caught quickly
+        pulse();
+        setInterval(pulse, 2500);
     </script>
 </body>
 </html>
