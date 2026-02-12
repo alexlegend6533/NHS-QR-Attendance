@@ -9,19 +9,16 @@
         :root {
             --bg: #0b0f1a;
             --accent: #38bdf8;
-            --success: #10b981;
-            --text-main: #f8fafc;
             --text-dim: #94a3b8;
         }
         body { 
             font-family: -apple-system, sans-serif; 
-            background: var(--bg); color: var(--text-main); 
+            background: var(--bg); color: white; 
             margin: 0; display: flex; height: 100vh; overflow: hidden; 
         }
         .admin-panel { 
             flex: 1; display: flex; flex-direction: column; justify-content: center; 
-            align-items: center; background: #0f172a; padding: 60px;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            align-items: center; background: #0f172a; border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
         .qr-panel { 
             flex: 1.5; display: flex; flex-direction: column; justify-content: center; 
@@ -29,9 +26,9 @@
             background: radial-gradient(circle at center, #1e293b 0%, #0b0f1a 100%); 
         }
         .editable-box { 
-            width: 100%; max-width: 380px; background: rgba(255, 255, 255, 0.03); 
+            width: 80%; background: rgba(255, 255, 255, 0.03); 
             border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 16px; 
-            padding: 24px; font-size: 2rem; color: white; text-align: center; margin-bottom: 40px;
+            padding: 24px; font-size: 2rem; color: white; text-align: center; margin-bottom: 30px;
         }
         .qr-container { 
             background: white; padding: 25px; border-radius: 32px; 
@@ -40,67 +37,52 @@
         #timer { font-size: 120px; color: var(--accent); font-weight: 100; }
         #status-badge { 
             position: absolute; top: 40px; right: 40px; font-size: 0.75rem; 
-            font-weight: 800; color: var(--success); background: rgba(16, 185, 129, 0.1); 
+            font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.1); 
             padding: 12px 24px; border-radius: 100px; border: 1px solid rgba(16, 185, 129, 0.3); 
         }
     </style>
 </head>
 <body>
-    <div id="status-badge">● SYNCING WITH GOOGLE...</div>
+    <div id="status-badge">● HYBRID ENGINE ACTIVE</div>
 
     <div class="admin-panel">
-        <input type="text" class="editable-box" id="displayDate" value="02/11/2026">
-        <input type="text" class="editable-box" id="displayPass" value="Service">
+        <input type="text" class="editable-box" value="02/11/2026">
+        <input type="text" class="editable-box" value="Service">
     </div>
 
     <div class="qr-panel">
-        <h1 style="letter-spacing:6px; color:var(--text-dim); font-size: 1.5rem;">NHS CHECK-IN</h1>
+        <h1 style="letter-spacing:6px; color:var(--text-dim)">NHS CHECK-IN</h1>
         <div id="timer">5s</div>
         <div class="qr-container"><div id="qrcode"></div></div>
         <div style="color:var(--text-dim); font-size: 0.75rem; letter-spacing: 2px;">
-            SERVER-SIDE COUNTER MODE (CLOCK INDEPENDENT)
+            OFFLINE-READY UTC VALIDATION
         </div>
     </div>
 
     <script>
-        const DEPLOY_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzeHVjEz0_n2s2nrFn3t0GrOz6IfKQYnAQvc_8cmyWAZ19NuYNjkq8RLrHxOJGpT6ZxSw/exec";
+        const DEPLOY_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbzn87UJNBdIWHvQnpjkgYuaOeUYa5ERn1Wikx64-mIwR30sPMxVFecDPx7JvkWjBJ5mhg/exec";
         let timeLeft = 5;
         let qr = new QRCode(document.getElementById("qrcode"), { width: 380, height: 380 });
-        let isSyncing = false;
 
-        async function fetchNewKey() {
-            if (isSyncing) return;
-            isSyncing = true;
-            try {
-                const response = await fetch(DEPLOY_URL + "?action=sync");
-                const data = await response.json();
-                
-                qr.clear();
-                qr.makeCode(DEPLOY_URL + "?key=" + data.key);
-                
-                timeLeft = 5;
-                document.getElementById('status-badge').style.color = "#10b981";
-                document.getElementById('status-badge').innerText = "● SERVER SYNCED";
-            } catch (e) {
-                document.getElementById('status-badge').style.color = "#f87171";
-                document.getElementById('status-badge').innerText = "● RECONNECTING...";
-            } finally {
-                isSyncing = false;
-            }
+        function updateQR() {
+            // No fetch request! Pure local math using Global UTC Time.
+            const now = new Date().getTime();
+            const key = Math.floor(now / 5000);
+            
+            qr.clear();
+            qr.makeCode(DEPLOY_URL + "?key=" + key);
         }
 
         setInterval(() => {
-            if (document.getElementById('status-badge').innerText.includes("RECONNECTING")) return;
-            
             timeLeft--;
             if (timeLeft <= 0) {
-                fetchNewKey();
+                updateQR();
+                timeLeft = 5;
             }
             document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
 
-        // Initial Start
-        fetchNewKey();
+        updateQR();
     </script>
 </body>
 </html>
