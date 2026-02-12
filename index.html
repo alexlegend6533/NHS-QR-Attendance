@@ -104,7 +104,7 @@
     </style>
 </head>
 <body>
-    <div id="status-badge">● LOCAL ENGINE: WIDE TOLERANCE</div>
+    <div id="status-badge">● UTC ENGINE: TIMEZONE PROOF</div>
 
     <div class="admin-panel">
         <div class="input-group">
@@ -124,12 +124,12 @@
             <div id="qrcode"></div>
         </div>
         <div style="color:var(--text-dim); font-size: 0.75rem; letter-spacing: 2px;">
-            BUFFER: ±2 CYCLES (25s VALIDITY)
+            GRACE PERIOD: 2 CYCLES (10s)
         </div>
     </div>
 
     <script>
-        // 🚀 NEW DEPLOYMENT URL
+        // 🚀 HARDCODED DEPLOYMENT URL
         const BASE_URL = "https://script.google.com/a/macros/houstonchristian.org/s/AKfycbxQyax5iFmTkB8FCFo6kZVpPiHp6CvXNmZ2rFMiOtuxg5cFMhfxceKOoW1hp0dq8f7vwA/exec";
         
         let timeLeft = 5;
@@ -138,8 +138,8 @@
             const container = document.getElementById("qrcode");
             container.innerHTML = ""; 
             
-            // Generate key based on local Unix time (5s intervals)
-            const 𝐤 = Math.floor(Date.now() / 5000); 
+            // Generate key based on UTC Unix time (Independent of Time Zone)
+            const 𝐤 = Math.floor(new Date().getTime() / 5000); 
 
             new QRCode(container, { 
                 text: `${BASE_URL}?key=${𝐤}`, 
