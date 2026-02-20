@@ -67,15 +67,14 @@
 
     <div class="qr-panel">
         <h1>NHS CHECK-IN</h1>
-        <div id="timer">9s</div>
+        <div id="timer">16s</div>
         <div class="qr-container">
             <div id="qrcode"></div>
         </div>
-        <div class="footer-note">SESSION-SPECIFIC LOCKOUT ACTIVE</div>
+        <div class="footer-note">BUFFERED QR SECURITY ACTIVE</div>
     </div>
 
     <script>
-        // Updated to your newest deployment URL
         const BASE_URL = "https://script.google.com/macros/s/AKfycbzX1ChSao1J-yuCOUefiKTZzEfY2mO4qv-AyBm3pFe0hbXCcO8cVAFiiFHypGmqVfeJwg/exec";
         
         let drift = 0; 
@@ -97,6 +96,7 @@
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
             const now = Date.now() + drift;
+            // Key changes every 5 seconds
             const key = Math.floor(now / 5000); 
             new QRCode(container, { 
                 text: `${BASE_URL}?key=${key}`, 
@@ -105,12 +105,13 @@
             });
         }
 
-        let timeLeft = 9;
+        // Updated timer to 16 seconds to give students more time per QR code
+        let timeLeft = 16;
         setInterval(() => {
             timeLeft--;
             if (timeLeft <= 0) { 
                 genQR(); 
-                timeLeft = 9; 
+                timeLeft = 16; 
             }
             document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
