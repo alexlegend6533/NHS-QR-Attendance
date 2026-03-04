@@ -1,182 +1,70 @@
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>NHS | Attendance Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-        :root {
-            --bg: #0b0f1a;
-            --card: #1e293b;
-            --accent: #38bdf8;
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-        }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: var(--bg); 
-            color: var(--text-main); 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
-        .admin-panel { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            background: #0f172a; 
-            padding: 60px;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .qr-panel { 
-            flex: 1.5; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            text-align: center; 
-            background: radial-gradient(circle at center, #1e293b 0%, #0b0f1a 100%); 
-        }
-
-        .input-group { width: 100%; max-width: 380px; margin-bottom: 40px; }
+<div class="admin-panel">
+    <div id="attendance-form">
+        <h2>NHS Meeting Attendance</h2>
+        <p id="status-msg" style="color: var(--accent);"></p>
         
-        label { 
-            display: block; 
-            color: var(--accent); 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            letter-spacing: 1.5px; 
-            margin-bottom: 15px; 
-            font-size: 0.75rem; 
-        }
-
-        .editable-box { 
-            width: 100%; 
-            background: rgba(255, 255, 255, 0.03); 
-            border: 1px solid rgba(56, 189, 248, 0.2); 
-            border-radius: 16px; 
-            padding: 20px; 
-            font-size: 2.5rem; 
-            color: white; 
-            text-align: center; 
-            outline: none; 
-            transition: 0.3s;
-            font-weight: 300;
-        }
-
-        .editable-box:focus { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
-
-        .qr-container { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 28px; 
-            box-shadow: 0 0 80px rgba(56, 189, 248, 0.15); 
-            margin: 30px 0;
-        }
-
-        #timer { 
-            font-size: 100px; 
-            color: var(--accent); 
-            font-weight: 200; 
-            margin-bottom: -10px;
-            font-variant-numeric: tabular-nums;
-        }
-
-        #sync-status { 
-            position: absolute; 
-            top: 30px; 
-            right: 30px; 
-            font-size: 0.7rem; 
-            font-weight: 700;
-            letter-spacing: 1px; 
-            color: #10b981; 
-            background: rgba(16, 185, 129, 0.1); 
-            padding: 10px 20px; 
-            border-radius: 40px; 
-            border: 1px solid rgba(16, 185, 129, 0.2); 
-        }
-
-        h1 { font-weight: 800; letter-spacing: 4px; font-size: 1.2rem; color: var(--text-dim); }
-        .footer-note { margin-top: 20px; color: var(--text-dim); font-size: 0.8rem; letter-spacing: 1px; }
-    </style>
-</head>
-<body>
-    <div id="sync-status">● SYSTEM LIVE</div>
-
-    <div class="admin-panel">
         <div class="input-group">
-            <label>Session Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="02/11/2026">
+            <label>Email Address</label>
+            <input type="email" id="user-email" placeholder="any@email.com" required>
         </div>
+
+        <div class="input-group">
+            <label>Meeting Date</label>
+            <input type="date" id="meeting-date" required>
+        </div>
+
         <div class="input-group">
             <label>Meeting Password</label>
-            <input type="text" class="editable-box" id="displayPass" value="Service">
+            <input type="password" id="meeting-pass" placeholder="Enter code" required>
         </div>
+
+        <button onclick="submitAttendance()" id="submit-btn">Submit Attendance</button>
     </div>
 
-    <div class="qr-panel">
-        <h1>NHS CHECK-IN</h1>
-        <div id="timer">5s</div>
-        <div class="qr-container">
-            <div id="qrcode"></div>
-        </div>
-        <div class="footer-note">IDENTITY VERIFICATION ACTIVE</div>
+    <div id="blocked-message" style="display:none; text-align: center;">
+        <h3 style="color: #ef4444;">Access Restricted</h3>
+        <p>This device has already submitted attendance for today's session.</p>
     </div>
+</div>
 
-    <script>
-        // Updated to your newest deployment URL
-        const BASE_URL = "https://script.google.com/macros/s/AKfycbz5FIkOJdd59svp6BqKb9EoLe63jGgNo0NpU3p9luevKnSGWJXk5xZ_vAWUENsKYg8AmQ/exec";
-        
-        let drift = 0; 
+<script>
+    // 1. Check if the device is already blocked on load
+    window.onload = function() {
+        if (localStorage.getItem('nhs_submitted_today')) {
+            showBlocked();
+        }
+    };
 
-        async function syncServer() {
-            try {
-                const start = Date.now();
-                const res = await fetch(BASE_URL + "?action=sync");
-                const data = await res.json();
-                // Handshake alignment
-                drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
-            } catch (e) { console.warn("Sync failed."); }
-            genQR();
+    function showBlocked() {
+        document.getElementById('attendance-form').style.display = 'none';
+        document.getElementById('blocked-message').style.display = 'block';
+    }
+
+    function submitAttendance() {
+        const email = document.getElementById('user-email').value;
+        const date = document.getElementById('meeting-date').value;
+        const pass = document.getElementById('meeting-pass').value;
+        const msg = document.getElementById('status-msg');
+
+        // Basic Validation
+        if (!email || !date || !pass) {
+            msg.innerText = "Please fill out all fields.";
+            return;
         }
 
-        function genQR() {
-            const container = document.getElementById("qrcode");
-            container.innerHTML = "";
+        // Logic: Accept any email, but validate password (example: "NHS2026")
+        if (pass === "YOUR_SECRET_PASSWORD") {
+            // SUCCESS
+            alert("Attendance recorded for " + email);
             
-            // Calculate Key Index
-            const now = Date.now() + drift;
-            const key = Math.floor(now / 5000); 
+            // 2. BLOCK THE DEVICE
+            localStorage.setItem('nhs_submitted_today', 'true');
+            showBlocked();
             
-            new QRCode(container, { 
-                text: `${BASE_URL}?key=${key}`, 
-                width: 400, 
-                height: 400,
-                correctLevel : QRCode.CorrectLevel.M 
-            });
+            // Here you would typically send the data to a Google Sheet or Firebase
+            console.log("Submitting:", { email, date, pass });
+        } else {
+            msg.innerText = "Incorrect Meeting Password.";
         }
-
-        let timeLeft = 5;
-        setInterval(() => {
-            timeLeft--;
-            if (timeLeft <= 0) { 
-                genQR(); 
-                timeLeft = 5; 
-            }
-            document.getElementById('timer').innerText = timeLeft + "s";
-        }, 1000);
-
-        syncServer();
-        // Periodic Re-sync to maintain accuracy
-        setInterval(syncServer, 120000);
-    </script>
-</body>
-</html>
-
+    }
+</script>
