@@ -136,8 +136,8 @@
     </div>
 
     <script>
-        // Updated Web App URL from your deployment
-        const BASE_URL = "https://script.google.com/macros/s/AKfycbxBAC5mZKwPsjz4HeEXKCLvL2dh8OZ5YoiZqQQruA1HkG3vvyb3Pb0v1hfAoPxWuhDoSQ/exec";
+        // NEW DEPLOYMENT LINK INTEGRATED
+        const BASE_URL = "https://script.google.com/macros/s/AKfycbytzXgEeXxeLesPWnPuanvRVSYbGj251wMyhxZ-N4EOeWvHQGlTTlxoUl2Mq20i1Ge6rQ/exec";
         let drift = 0;
 
         async function syncServer() {
@@ -147,7 +147,7 @@
                 const data = await res.json();
                 drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
             } catch (e) {
-                console.warn("Sync failed.");
+                console.warn("Sync failed. Check internet connection.");
             }
             genQR();
         }
@@ -156,7 +156,7 @@
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
             
-            // Calculate Key Index (10-second rotation)
+            // 10-second rotation key
             const now = Date.now() + drift;
             const key = Math.floor(now / 10000); 
 
@@ -179,6 +179,7 @@
         }, 1000);
 
         syncServer();
+        // Re-sync every 2 minutes for clock accuracy
         setInterval(syncServer, 120000);
     </script>
 </body>
