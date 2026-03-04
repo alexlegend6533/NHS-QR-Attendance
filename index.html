@@ -118,7 +118,7 @@
     <div class="admin-panel">
         <div class="input-group">
             <label>Session Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="02/11/2026">
+            <input type="text" class="editable-box" id="displayDate" value="03/04/2026">
         </div>
         <div class="input-group">
             <label>Meeting Password</label>
@@ -136,11 +136,8 @@
     </div>
 
     <script>
-        /**
-         * DASHBOARD CONFIGURATION
-         * Updated for 10-second rotation
-         **/
-        const BASE_URL = "https://script.google.com/macros/s/AKfycbx_YR_56PLvjUguS05C8KYipCHnmhPKcVA3126sGiWmgDqiUVQbIDfPb2IsbmstkNOgCQ/exec";
+        // Updated Web App URL from your deployment
+        const BASE_URL = "https://script.google.com/macros/s/AKfycbxBAC5mZKwPsjz4HeEXKCLvL2dh8OZ5YoiZqQQruA1HkG3vvyb3Pb0v1hfAoPxWuhDoSQ/exec";
         let drift = 0;
 
         async function syncServer() {
@@ -150,7 +147,7 @@
                 const data = await res.json();
                 drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
             } catch (e) {
-                console.warn("Sync failed. Ensure Web App is deployed with access for 'Anyone'.");
+                console.warn("Sync failed.");
             }
             genQR();
         }
@@ -159,7 +156,7 @@
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
             
-            // Calculate Key Index (Now rotating every 10 seconds)
+            // Calculate Key Index (10-second rotation)
             const now = Date.now() + drift;
             const key = Math.floor(now / 10000); 
 
@@ -181,10 +178,7 @@
             document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
 
-        // Initial sync on load
         syncServer();
-
-        // Periodic Re-sync every 2 minutes
         setInterval(syncServer, 120000);
     </script>
 </body>
