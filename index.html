@@ -130,7 +130,7 @@
     </div>
 
     <script>
-        // Updated to your newest deployment URL
+        // Deployment URL - Used for generating rotating QR keys
         const BASE_URL = "https://script.google.com/macros/s/AKfycbwXzh4KXa8n5NCXpOeOiFySe7xmRCkIlL-iX_XM0xrge8V9yIX34fvgP94GBWffeQJkjA/exec";
         
         let drift = 0; 
@@ -140,9 +140,11 @@
                 const start = Date.now();
                 const res = await fetch(BASE_URL + "?action=sync");
                 const data = await res.json();
-                // Handshake alignment
+                // Align browser time with Google Server time
                 drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
-            } catch (e) { console.warn("Sync failed."); }
+            } catch (e) { 
+                console.warn("Sync failed. Check if Web App is deployed as 'Anyone'."); 
+            }
             genQR();
         }
 
@@ -150,7 +152,7 @@
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
             
-            // Calculate Key Index
+            // Generate a rolling key based on time (every 5 seconds)
             const now = Date.now() + drift;
             const key = Math.floor(now / 5000); 
             
@@ -173,9 +175,8 @@
         }, 1000);
 
         syncServer();
-        // Periodic Re-sync to maintain accuracy
+        // Periodic Re-sync every 2 minutes to prevent time drift
         setInterval(syncServer, 120000);
     </script>
 </body>
 </html>
-
