@@ -144,7 +144,7 @@
 
     <script>
         // INTEGRATED DEPLOYMENT LINK
-        const BASE_URL = "https://script.google.com/macros/s/AKfycbxBID9_n7gYR2OSUwg27jxQ0aezTCFHaaVg8ZPJ3OOn8y8O_89s257IEKFSGnkml6ys1Q/exec";
+        const BASE_URL = "https://script.google.com/macros/s/AKfycbwT-3P0Nf96gtS9EedXJPkRdwdPyTmNQU2GvQT41k_JjSJGSJSlD8TqOBnqAFkRo9kTXw/exec";
         let drift = 0;
 
         // Sync with Google Server Time to prevent clock lag
@@ -166,9 +166,9 @@
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
             
-            // Generate Key Index (10000ms = 10 second window)
+            // Generate Key Index (15000ms = 15 second window)
             const now = Date.now() + drift;
-            const key = Math.floor(now / 10000); 
+            const key = Math.floor(now / 15000); 
 
             new QRCode(container, {
                 text: `${BASE_URL}?key=${key}`,
