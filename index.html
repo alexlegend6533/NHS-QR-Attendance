@@ -7,22 +7,20 @@
     <style>
         :root {
             --bg: #0b0f1a;
-            --card: #1e293b;
             --accent: #38bdf8;
-            --text-main: #f8fafc;
             --text-dim: #94a3b8;
-            --success: #10b981;
+            --card: #1e293b;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg);
-            color: var(--text-main);
+            color: white;
             margin: 0;
             display: flex;
             height: 100vh;
             overflow: hidden;
         }
-        /* LEFT SIDE: CONTROL PANEL */
+        /* LEFT PANEL: CONFIG */
         .admin-panel {
             flex: 1;
             display: flex;
@@ -33,7 +31,7 @@
             padding: 60px;
             border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
-        /* RIGHT SIDE: QR DISPLAY */
+        /* RIGHT PANEL: QR CODE */
         .qr-panel {
             flex: 1.5;
             display: flex;
@@ -46,7 +44,7 @@
         .input-group {
             width: 100%;
             max-width: 380px;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
         }
         label {
             display: block;
@@ -68,11 +66,9 @@
             text-align: center;
             outline: none;
             transition: all 0.3s ease;
-            font-weight: 300;
         }
         .editable-box:focus {
             border-color: var(--accent);
-            background: rgba(56, 189, 248, 0.05);
             box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
         }
         .qr-container {
@@ -81,7 +77,6 @@
             border-radius: 28px;
             box-shadow: 0 0 80px rgba(56, 189, 248, 0.15);
             margin: 30px 0;
-            transition: transform 0.2s ease;
         }
         #timer {
             font-size: 110px;
@@ -90,19 +85,6 @@
             margin-bottom: -15px;
             font-variant-numeric: tabular-nums;
         }
-        #sync-status {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
-            padding: 12px 24px;
-            border-radius: 40px;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
         h1 {
             font-weight: 800;
             letter-spacing: 5px;
@@ -110,27 +92,27 @@
             color: var(--text-dim);
             margin-bottom: 0;
         }
-        .footer-note {
-            margin-top: 25px;
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            letter-spacing: 2px;
-            opacity: 0.7;
+        .status-badge {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <div id="sync-status">● SYSTEM LIVE</div>
-    
     <div class="admin-panel">
         <div class="input-group">
             <label>Current Session Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="03/04/2026">
+            <input type="text" class="editable-box" id="displayDate" value="04/01/2026">
         </div>
-        <div class="input-group">
-            <label>Meeting Password</label>
-            <input type="text" class="editable-box" id="displayPass" value="Service">
-        </div>
+        <div class="status-badge">● PASSWORD-FREE MODE ACTIVE</div>
+        <p style="color: var(--text-dim); font-size: 0.85rem; margin-top: 20px; text-align: center;">
+            Students only need their email and the date.<br>QR updates every 15 seconds.
+        </p>
     </div>
 
     <div class="qr-panel">
@@ -139,25 +121,23 @@
         <div class="qr-container" id="qr-wrapper">
             <div id="qrcode"></div>
         </div>
-        <div class="footer-note">SECURE IDENTITY VERIFICATION</div>
+        <div style="color: var(--text-dim); font-size: 0.85rem; letter-spacing: 2px;">SECURE IDENTITY VERIFICATION</div>
     </div>
 
     <script>
         // INTEGRATED DEPLOYMENT LINK
-        const BASE_URL = "https://script.google.com/macros/s/AKfycbyNeW_fXa1UoFq3MNNId91kYyjxFB9pFlvLE8HDQa93vpxBGW8UkJaRDkayEetiWLfggg/exec";
+        const BASE_URL = "https://script.google.com/macros/s/AKfycby0fcMX_xMGdCu9L_ORwa0x-89tqUuau-d5_74dIQA3KHIyfbC98o_-npHwrU1IK9ZtIg/exec";
         let drift = 0;
 
-        // Sync with Google Server Time to prevent clock lag
         async function syncServer() {
             try {
                 const start = Date.now();
                 const res = await fetch(BASE_URL + "?action=sync");
                 const data = await res.json();
-                // Calculate time difference between local and server
+                // Adjust for network latency
                 drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
-                console.log("Sync complete. Drift: " + drift + "ms");
             } catch (e) {
-                console.warn("Sync failed. Check internet connectivity.");
+                console.warn("Syncing...");
             }
             genQR();
         }
@@ -166,7 +146,7 @@
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
             
-            // Generate Key Index (15000ms = 15 second window)
+            // Calculate security key
             const now = Date.now() + drift;
             const key = Math.floor(now / 15000); 
 
@@ -177,13 +157,12 @@
                 correctLevel : QRCode.CorrectLevel.M 
             });
             
-            // Subtle flash effect on refresh
+            // Visual feedback on refresh
             const wrapper = document.getElementById("qr-wrapper");
             wrapper.style.transform = "scale(1.02)";
             setTimeout(() => wrapper.style.transform = "scale(1)", 100);
         }
 
-        // 10-Second Countdown Logic
         let timeLeft = 10;
         setInterval(() => {
             timeLeft--;
@@ -194,9 +173,8 @@
             document.getElementById('timer').innerText = timeLeft + "s";
         }, 1000);
 
-        // Initial launch
+        // Initial launch and background re-sync
         syncServer();
-        // Background re-sync every 2 minutes for precision
         setInterval(syncServer, 120000);
     </script>
 </body>
