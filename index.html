@@ -22,7 +22,6 @@
             height: 100vh;
             overflow: hidden;
         }
-        /* LEFT SIDE: CONTROL PANEL */
         .admin-panel {
             flex: 1;
             display: flex;
@@ -33,7 +32,6 @@
             padding: 60px;
             border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
-        /* RIGHT SIDE: QR DISPLAY */
         .qr-panel {
             flex: 1.5;
             display: flex;
@@ -125,13 +123,9 @@
     <div class="admin-panel">
         <div class="input-group">
             <label>Current Session Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="04/01/2026">
+            <input type="text" class="editable-box" id="displayDate" value="03/04/2026">
         </div>
-        <div class="input-group">
-            <label>Meeting Password</label>
-            <input type="text" class="editable-box" id="displayPass" value="SERVICE">
         </div>
-    </div>
 
     <div class="qr-panel">
         <h1>NHS ATTENDANCE</h1>
@@ -143,11 +137,10 @@
     </div>
 
     <script>
-        // INTEGRATED NEW DEPLOYMENT LINK
-        const BASE_URL = "https://script.google.com/macros/s/AKfycbzyRncvE5mJRNu_yq1CJwEje-e0au1S-G56rYSQZkWzTQWdx0SSFVh3ZkCW8lwTGBsgBg/exec";
+        // INTEGRATED DEPLOYMENT LINK
+        const BASE_URL = "https://script.google.com/macros/s/AKfycbxeBOA12vFuSkwSi4zNN7BNA51-zNarrIMTj5r6Q384Evm_fBSQNmbRTPYLU4YH_q5DJw/exec";
         let drift = 0;
 
-        // Sync with Google Server Time to prevent clock lag
         async function syncServer() {
             try {
                 const start = Date.now();
@@ -156,7 +149,7 @@
                 drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
                 console.log("Sync complete. Drift: " + drift + "ms");
             } catch (e) {
-                console.warn("Sync failed. Check internet connectivity.");
+                console.warn("Sync failed.");
             }
             genQR();
         }
@@ -164,7 +157,6 @@
         function genQR() {
             const container = document.getElementById("qrcode");
             container.innerHTML = "";
-            
             const now = Date.now() + drift;
             const key = Math.floor(now / 15000); 
 
