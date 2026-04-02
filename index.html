@@ -2,188 +2,99 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NHS | Attendance Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHS Attendance Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg: #0b0f1a;
-            --card: #1e293b;
-            --accent: #38bdf8;
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --success: #10b981;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .admin-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: #0f172a;
-            padding: 60px;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .qr-panel {
-            flex: 1.5;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            background: radial-gradient(circle at center, #1e293b 0%, #0b0f1a 100%);
-        }
-        .input-group {
-            width: 100%;
-            max-width: 380px;
-            margin-bottom: 40px;
-        }
-        label {
-            display: block;
-            color: var(--accent);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-            font-size: 0.8rem;
-        }
-        .editable-box {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 16px;
-            padding: 22px;
-            font-size: 2.2rem;
-            color: white;
-            text-align: center;
-            outline: none;
-            transition: all 0.3s ease;
-            font-weight: 300;
-        }
-        .editable-box:focus {
-            border-color: var(--accent);
-            background: rgba(56, 189, 248, 0.05);
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
-        }
-        .qr-container {
-            background: white;
-            padding: 30px;
-            border-radius: 28px;
-            box-shadow: 0 0 80px rgba(56, 189, 248, 0.15);
-            margin: 30px 0;
-            transition: transform 0.2s ease;
-        }
-        #timer {
-            font-size: 110px;
-            color: var(--accent);
-            font-weight: 200;
-            margin-bottom: -15px;
-            font-variant-numeric: tabular-nums;
-        }
-        #sync-status {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
-            padding: 12px 24px;
-            border-radius: 40px;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-        h1 {
-            font-weight: 800;
-            letter-spacing: 5px;
-            font-size: 1.4rem;
-            color: var(--text-dim);
-            margin-bottom: 0;
-        }
-        .footer-note {
-            margin-top: 25px;
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            letter-spacing: 2px;
-            opacity: 0.7;
-        }
+        .system-live { color: #00ff00; text-shadow: 0 0 5px #00ff00; }
+        body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body>
-    <div id="sync-status">● SYSTEM LIVE</div>
-    
-    <div class="admin-panel">
-        <div class="input-group">
-            <label>Current Session Date</label>
-            <input type="text" class="editable-box" id="displayDate" value="03/04/2026">
-        </div>
-        </div>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="qr-panel">
-        <h1>NHS ATTENDANCE</h1>
-        <div id="timer">10s</div>
-        <div class="qr-container" id="qr-wrapper">
-            <div id="qrcode"></div>
-        </div>
-        <div class="footer-note">SECURE IDENTITY VERIFICATION</div>
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold tracking-tighter mb-2">NHS ATTENDANCE</h1>
+        <p class="system-live font-mono text-sm">● SYSTEM LIVE - SECURE VERIFICATION</p>
     </div>
 
-    <script>
-        // INTEGRATED DEPLOYMENT LINK
-        const BASE_URL = "https://sheetdb.io/api/v1/5z6xv54lor56s";
-        let drift = 0;
-
-        async function syncServer() {
-            try {
-                const start = Date.now();
-                const res = await fetch(BASE_URL + "?action=sync");
-                const data = await res.json();
-                drift = (data.serverTime + ((Date.now() - start) / 2)) - Date.now();
-                console.log("Sync complete. Drift: " + drift + "ms");
-            } catch (e) {
-                console.warn("Sync failed.");
-            }
-            genQR();
-        }
-
-        function genQR() {
-            const container = document.getElementById("qrcode");
-            container.innerHTML = "";
-            const now = Date.now() + drift;
-            const key = Math.floor(now / 15000); 
-
-            new QRCode(container, {
-                text: `${BASE_URL}?key=${key}`,
-                width: 400,
-                height: 400,
-                correctLevel : QRCode.CorrectLevel.M 
-            });
+    <div id="main-card" class="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-2xl w-full max-auto max-w-md">
+        <div id="input-area">
+            <label class="block text-zinc-400 text-xs uppercase font-bold mb-2">Member Email</label>
+            <input type="email" id="emailInput" placeholder="student@school.org" 
+                class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 mb-4 focus:outline-none focus:border-blue-500 transition-all">
             
-            const wrapper = document.getElementById("qr-wrapper");
-            wrapper.style.transform = "scale(1.02)";
-            setTimeout(() => wrapper.style.transform = "scale(1)", 100);
-        }
+            <button onclick="handleCheckIn()" id="submitBtn"
+                class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-zinc-200 transition-colors">
+                VERIFY & CHECK IN
+            </button>
+        </div>
 
-        let timeLeft = 10;
-        setInterval(() => {
-            timeLeft--;
-            if (timeLeft <= 0) {
-                genQR();
-                timeLeft = 10;
+        <div id="success-area" class="hidden text-center">
+            <div class="text-5xl mb-4">✅</div>
+            <h2 class="text-xl font-bold mb-1">Check-in Complete</h2>
+            <p id="userName" class="text-zinc-400 mb-6 font-mono"></p>
+            <button onclick="window.location.reload()" class="text-sm text-zinc-500 underline">Next Student</button>
+        </div>
+    </div>
+
+    <p class="mt-8 text-zinc-600 text-xs font-mono">ENCRYPTED ENDPOINT: 5z6xv54lor56s</p>
+
+    <script>
+        const API_URL = "https://sheetdb.io/api/v1/5z6xv54lor56s";
+
+        async function handleCheckIn() {
+            const email = document.getElementById('emailInput').value.trim().toLowerCase();
+            const btn = document.getElementById('submitBtn');
+            
+            if (!email) {
+                alert("Please enter an email address.");
+                return;
             }
-            document.getElementById('timer').innerText = timeLeft + "s";
-        }, 1000);
 
-        syncServer();
-        setInterval(syncServer, 120000);
+            btn.disabled = true;
+            btn.innerText = "VERIFYING...";
+
+            try {
+                // 1. SEARCH for the member in your sheet
+                const searchRes = await fetch(`${API_URL}/search?Email=${email}`);
+                const members = await searchRes.json();
+
+                if (members.length > 0) {
+                    const memberName = members[0].Name;
+
+                    // 2. LOG the attendance entry
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            data: [
+                                {
+                                    "Name": memberName,
+                                    "Email": email,
+                                    "Status": "Present",
+                                    "Timestamp": new Date().toLocaleString()
+                                }
+                            ]
+                        })
+                    });
+
+                    // Show Success
+                    document.getElementById('input-area').classList.add('hidden');
+                    document.getElementById('success-area').classList.remove('hidden');
+                    document.getElementById('userName').innerText = memberName;
+                } else {
+                    alert("Member email not found in the NHS database. Please contact an officer.");
+                    btn.disabled = false;
+                    btn.innerText = "VERIFY & CHECK IN";
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Connection Error. Please check your internet.");
+                btn.disabled = false;
+                btn.innerText = "VERIFY & CHECK IN";
+            }
+        }
     </script>
 </body>
 </html>
