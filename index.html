@@ -3,97 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NHS Attendance Dashboard</title>
+    <title>NHS SECURE CHECK-IN</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .system-live { color: #00ff00; text-shadow: 0 0 5px #00ff00; }
         body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; }
+        .success-glow { box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold tracking-tighter mb-2">NHS ATTENDANCE</h1>
-        <p class="system-live font-mono text-sm">● SYSTEM LIVE - SECURE VERIFICATION</p>
-    </div>
-
-    <div id="main-card" class="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-2xl w-full max-auto max-w-md">
-        <div id="input-area">
-            <label class="block text-zinc-400 text-xs uppercase font-bold mb-2">Member Email</label>
-            <input type="email" id="emailInput" placeholder="student@school.org" 
-                class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 mb-4 focus:outline-none focus:border-blue-500 transition-all">
-            
-            <button onclick="handleCheckIn()" id="submitBtn"
-                class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-zinc-200 transition-colors">
-                VERIFY & CHECK IN
-            </button>
+    <div id="auth-check" class="hidden flex flex-col items-center">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold tracking-tighter mb-2">NHS ATTENDANCE</h1>
+            <p class="text-green-500 font-mono text-sm uppercase">● IDENTITY VERIFIED</p>
         </div>
 
-        <div id="success-area" class="hidden text-center">
-            <div class="text-5xl mb-4">✅</div>
-            <h2 class="text-xl font-bold mb-1">Check-in Complete</h2>
-            <p id="userName" class="text-zinc-400 mb-6 font-mono"></p>
-            <button onclick="window.location.reload()" class="text-sm text-zinc-500 underline">Next Student</button>
+        <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div id="input-area">
+                <label class="block text-zinc-400 text-xs uppercase font-bold mb-2">School Email</label>
+                <input type="email" id="emailInput" placeholder="name@school.org" 
+                    class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 mb-4 focus:outline-none focus:border-blue-500 transition-all">
+                
+                <button onclick="handleCheckIn()" id="submitBtn"
+                    class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-zinc-200 transition-colors">
+                    CONFIRM ATTENDANCE
+                </button>
+            </div>
+
+            <div id="success-area" class="hidden text-center">
+                <div class="text-5xl mb-4 text-green-500">✓</div>
+                <h2 class="text-xl font-bold mb-1">Check-in Complete</h2>
+                <p id="userNameDisplay" class="text-zinc-400 mb-6 font-mono"></p>
+                <p class="text-xs text-zinc-600">You can now close this window.</p>
+            </div>
         </div>
     </div>
 
-    <p class="mt-8 text-zinc-600 text-xs font-mono">ENCRYPTED ENDPOINT: 5z6xv54lor56s</p>
+    <div id="error-screen" class="hidden text-center p-10">
+        <h1 class="text-6xl mb-4">⚠️</h1>
+        <h2 class="text-2xl font-bold text-red-500 mb-2">EXPIRED SESSION</h2>
+        <p class="text-zinc-500">The QR code has rotated. Please scan the current code on the projector.</p>
+    </div>
 
     <script>
         const API_URL = "https://sheetdb.io/api/v1/5z6xv54lor56s";
+        const SECRET = "SUPERMAN_STRENGTH_2026"; 
+
+        function verifyToken() {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('t');
+            if (!token) return false;
+
+            const now = Math.floor(Date.now() / 10000);
+            
+            // Generate valid hashes for Previous, Current, and Next 10s windows
+            const validHashes = [now - 1, now, now + 1].map(block => 
+                btoa(SECRET + block).substring(0, 10).replace(/[/+=]/g, "X")
+            );
+
+            return validHashes.includes(token);
+        }
 
         async function handleCheckIn() {
             const email = document.getElementById('emailInput').value.trim().toLowerCase();
             const btn = document.getElementById('submitBtn');
             
-            if (!email) {
-                alert("Please enter an email address.");
-                return;
-            }
+            if (!email) return alert("Email required");
 
             btn.disabled = true;
             btn.innerText = "VERIFYING...";
 
             try {
-                // 1. SEARCH for the member in your sheet
+                // Search for user in Sheet
                 const searchRes = await fetch(`${API_URL}/search?Email=${email}`);
-                const members = await searchRes.json();
+                const data = await searchRes.json();
 
-                if (members.length > 0) {
-                    const memberName = members[0].Name;
+                if (data.length > 0) {
+                    const name = data[0].Name;
 
-                    // 2. LOG the attendance entry
+                    // Log attendance
                     await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            data: [
-                                {
-                                    "Name": memberName,
-                                    "Email": email,
-                                    "Status": "Present",
-                                    "Timestamp": new Date().toLocaleString()
-                                }
-                            ]
+                            data: [{
+                                "Name": name,
+                                "Email": email,
+                                "Status": "Present",
+                                "Timestamp": new Date().toLocaleString()
+                            }]
                         })
                     });
 
-                    // Show Success
                     document.getElementById('input-area').classList.add('hidden');
                     document.getElementById('success-area').classList.remove('hidden');
-                    document.getElementById('userName').innerText = memberName;
+                    document.getElementById('userNameDisplay').innerText = name;
                 } else {
-                    alert("Member email not found in the NHS database. Please contact an officer.");
+                    alert("Email not found in records.");
                     btn.disabled = false;
-                    btn.innerText = "VERIFY & CHECK IN";
+                    btn.innerText = "CONFIRM ATTENDANCE";
                 }
-
-            } catch (error) {
-                console.error(error);
-                alert("Connection Error. Please check your internet.");
+            } catch (err) {
+                alert("Error connecting to database.");
                 btn.disabled = false;
-                btn.innerText = "VERIFY & CHECK IN";
             }
+        }
+
+        // Initialize Page
+        if (verifyToken()) {
+            document.getElementById('auth-check').classList.remove('hidden');
+        } else {
+            document.getElementById('error-screen').classList.remove('hidden');
         }
     </script>
 </body>
