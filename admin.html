@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NHS ADMIN - LIVE QR GENERATOR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #050505; color: white; font-family: 'Inter', sans-serif; }
+        #qrcode img { margin: 0 auto; border: 12px solid white; border-radius: 8px; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen text-center p-6">
+    
+    <div class="mb-8">
+        <h1 class="text-5xl font-black tracking-tighter mb-2">NHS MEETING AUTHENTICATOR</h1>
+        <p class="text-green-500 font-mono text-sm tracking-widest uppercase">● Rotating Secure Token Active</p>
+    </div>
+
+    <div class="bg-zinc-900 p-10 rounded-3xl border border-zinc-800 shadow-2xl">
+        <div id="qrcode"></div>
+        <div class="mt-8 w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+            <div id="progress" class="bg-green-500 h-full w-full transition-all duration-1000 linear"></div>
+        </div>
+        <p id="timerText" class="mt-2 text-zinc-500 font-mono text-xs uppercase">Rotating in 10s</p>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // This MUST be your GitHub Pages URL for the student index.html
+        const STUDENT_PAGE_URL = "https://alexlegend6533.github.io/NHS-QR-ATTENDANCE-as23958798dfg9ufgudskjg325978ysdiug3iu4g2534234p24598y98ycg92375g9sdfb97v9273yn9v7/";
+        const SECRET = "SUPERMAN_STRENGTH_2026"; 
+
+        const qrcode = new QRCode(document.getElementById("qrcode"), {
+            width: 350,
+            height: 350,
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        function generateToken() {
+            const timeBlock = Math.floor(Date.now() / 10000); 
+            return btoa(SECRET + timeBlock).substring(0, 10).replace(/[/+=]/g, "X");
+        }
+
+        function updateQR() {
+            const token = generateToken();
+            const finalURL = `${STUDENT_PAGE_URL}?t=${token}`;
+            qrcode.clear();
+            qrcode.makeCode(finalURL);
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            const seconds = now.getSeconds() % 10;
+            const remaining = 10 - seconds;
+            document.getElementById('progress').style.width = (remaining * 10) + "%";
+            document.getElementById('timerText').innerText = `Rotating in ${remaining}s`;
+            if (remaining === 10) updateQR();
+        }, 1000);
+
+        updateQR();
+    </script>
+</body>
+</html>
